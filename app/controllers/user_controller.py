@@ -1,0 +1,34 @@
+from fastapi import Depends, HTTPException
+from sqlalchemy.orm import Session
+from services import user_service
+from schemas.user import UserCreate, UserUpdate
+
+class UserController:
+    @staticmethod
+    def create_user(user: UserCreate, db: Session):
+        return user_service.create_user(db, user)
+
+    @staticmethod
+    def get_user(user_id: int, db: Session):
+        user = user_service.get_user(db, user_id)
+        if user is None:
+            raise HTTPException(status_code=404, detail="User not found")
+        return user
+
+    @staticmethod
+    def get_users(skip: int, limit: int, db: Session):
+        return user_service.get_users(db, skip, limit)
+
+    @staticmethod
+    def update_user(user_id: int, user: UserUpdate, db: Session):
+        updated_user = user_service.update_user(db, user_id, user)
+        if updated_user is None:
+            raise HTTPException(status_code=404, detail="User not found")
+        return updated_user
+
+    @staticmethod
+    def delete_user(user_id: int, db: Session):
+        deleted_user = user_service.delete_user(db, user_id)
+        if deleted_user is None:
+            raise HTTPException(status_code=404, detail="User not found")
+        return {"message": "User deleted successfully"}
