@@ -7,7 +7,7 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 class Environment(BaseSettings):
     """ 環境変数を読み込む
     """
-    database_url: str
+    DATABASE_URL: str  # 小文字から大文字に変更
 
     class Config:
         env_file = os.path.join(PROJECT_ROOT, '.env')
