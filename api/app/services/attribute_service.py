@@ -3,7 +3,7 @@ from models.friend import Attribute
 from utils.embedding import generate_embedding, cosine_similarity
 import json
 
-SIMILARITY_THRESHOLD = 0.8
+SIMILARITY_THRESHOLD = 0.7
 
 def flatten_json(data, prefix=''):
     items = []
