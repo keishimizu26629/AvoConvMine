@@ -14,3 +14,5 @@ class User(BaseModel):
     updated_at = Column(DateTime, default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc))
 
     friends = relationship("Friend", back_populates="user")
+    friend_attributes = relationship("FriendAttribute", back_populates="user")
+    conversation_histories = relationship("ConversationHistory", back_populates="user")
