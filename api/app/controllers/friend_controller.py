@@ -2,7 +2,8 @@ from fastapi import Depends, HTTPException
 from sqlalchemy.orm import Session
 from models.friend import Friend
 from schemas.conversation import ConversationInput
-from schemas.friend import AttributeSchema
+from schemas.friend import FriendCreate, FriendUpdate, FriendInDB
+from schemas.attribute import AttributeSchema
 from services import conversation_service, attribute_service, friend_service
 from database import get_db
 import logging
@@ -37,10 +38,6 @@ class FriendController:
             raise
 
     @staticmethod
-    def get_friends(skip: int, limit: int, db: Session):
-        return friend_service.get_friends(db, skip, limit)
-
-    @staticmethod
     async def get_all_attributes(db: Session = Depends(get_db)):
         attributes = await friend_service.get_all_attributes(db)
         return [AttributeSchema.from_orm(attr) for attr in attributes]
@@ -48,8 +45,28 @@ class FriendController:
     @staticmethod
     async def find_similar_attributes(query: str, db: Session = Depends(get_db)):
         similar_attributes = await friend_service.find_similar_attributes(db, query)
-        return similar_attributes
+        if not similar_attributes:
+            return {"message": "No similar attributes found"}
+        return {"similar_attributes": similar_attributes}
 
     @staticmethod
-    async def calculate_similarities(query: str, db: Session = Depends(get_db)):
-        return await friend_service.calculate_similarities(db, query)
+    def create_friend(friend: FriendCreate, db: Session = Depends(get_db)):
+        return friend_service.create_friend(db, friend)
+
+    @staticmethod
+    def get_friend(friend_id: int, db: Session = Depends(get_db)):
+        db_friend = friend_service.get_friend(db, friend_id)
+        if db_friend is None:
+            raise HTTPException(status_code=404, detail="Friend not found")
+        return db_friend
+
+    @staticmethod
+    def get_friends(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+        return friend_service.get_friends(db, skip=skip, limit=limit)
+
+    @staticmethod
+    def update_friend(friend_id: int, friend: FriendUpdate, db: Session = Depends(get_db)):
+        db_friend = friend_service.update_friend(db, friend_id, friend)
+        if db_friend is None:
+            raise HTTPException(status_code=404, detail="Friend not found")
+        return db_friend

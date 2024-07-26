@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
 from models.friend import Friend, FriendAttribute, Attribute
+from schemas.friend import FriendCreate, FriendUpdate
 import logging
 import json
 from utils.embedding import generate_embedding, cosine_similarity
@@ -36,13 +37,10 @@ async def save_friend_attributes(db: Session, friend_id: int, processed_attribut
         logger.exception(f"Error saving friend attributes: {str(e)}")
         raise
 
-def get_friends(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(Friend).offset(skip).limit(limit).all()
-
 async def get_all_attributes(db: Session):
     return db.query(Attribute).all()
 
-async def find_similar_attributes(db: Session, query: str, threshold: float = 0.8):
+async def find_similar_attributes(db: Session, query: str, threshold: float = 0.7):
     query_embedding = generate_embedding(query)
 
     similar_attributes = []
@@ -60,19 +58,31 @@ async def find_similar_attributes(db: Session, query: str, threshold: float = 0.
 
     return similar_attributes
 
-async def calculate_similarities(db: Session, query: str):
-    query_embedding = generate_embedding(query)
+def create_friend(db: Session, friend: FriendCreate):
+    db_friend = Friend(**friend.dict())
+    db.add(db_friend)
+    db.commit()
+    db.refresh(db_friend)
+    return db_friend
 
-    similarities = []
-    all_attributes = db.query(Attribute).all()
+def get_friend(db: Session, friend_id: int):
+    return db.query(Friend).filter(Friend.id == friend_id).first()
 
-    for attr in all_attributes:
-        attr_embedding = json.loads(attr.embedding)
-        similarity = cosine_similarity(query_embedding, attr_embedding)
-        similarities.append({
-            "id": attr.id,
-            "name": attr.name,
-            "similarity": similarity
-        })
+def get_friends(db: Session, skip: int = 0, limit: int = 100):
+    return db.query(Friend).offset(skip).limit(limit).all()
 
-    return similarities
+def update_friend(db: Session, friend_id: int, friend: FriendUpdate):
+    db_friend = db.query(Friend).filter(Friend.id == friend_id).first()
+    if db_friend:
+        for key, value in friend.dict().items():
+            setattr(db_friend, key, value)
+        db.commit()
+        db.refresh(db_friend)
+    return db_friend
+
+def delete_friend(db: Session, friend_id: int):
+    db_friend = db.query(Friend).filter(Friend.id == friend_id).first()
+    if db_friend:
+        db.delete(db_friend)
+        db.commit()
+    return db_friend
