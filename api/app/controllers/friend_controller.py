@@ -13,8 +13,8 @@ logger = logging.getLogger(__name__)
 
 class FriendController:
     @staticmethod
-    async def extract_and_save_attributes(friend_id: int, conversation: ConversationInput, db: Session = Depends(get_db)):
-        logger.debug(f"Starting extract_and_save_attributes for friend_id: {friend_id}")
+    async def extract_and_save_attributes(conversation: ConversationInput, db: Session = Depends(get_db)):
+        logger.debug(f"Starting extract_and_save_attributes for user_id: {conversation.user_id}, friend_id: {conversation.friend_id}")
         try:
             # Extract attributes from conversation
             logger.debug("Extracting attributes from conversation")
@@ -29,7 +29,10 @@ class FriendController:
 
             # Save processed attributes to friend
             logger.debug("Saving processed attributes")
-            save_result = await friend_service.save_friend_attributes(db, friend_id, processed_attributes)
+            save_result = await friend_service.save_friend_attributes(db, conversation.user_id, conversation.friend_id, processed_attributes)
+
+            # Save conversation history
+            await conversation_service.save_conversation_history(db, conversation)
 
             logger.debug("Attributes extracted and saved successfully")
             return {"message": "Attributes extracted and saved successfully", "attributes": processed_attributes}

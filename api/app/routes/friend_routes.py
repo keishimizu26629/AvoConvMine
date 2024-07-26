@@ -8,9 +8,9 @@ from database import get_db
 
 router = APIRouter()
 
-@router.post("/friends/{friend_id}/extract_attributes")
-async def extract_attributes(friend_id: int, conversation: ConversationInput, db: Session = Depends(get_db)):
-    return await FriendController.extract_and_save_attributes(friend_id, conversation, db)
+@router.post("/friends/extract_attributes")
+async def extract_attributes(conversation: ConversationInput = Body(...), db: Session = Depends(get_db)):
+    return await FriendController.extract_and_save_attributes(conversation, db)
 
 @router.get("/attributes", response_model=list[AttributeSchema])
 async def get_all_attributes(db: Session = Depends(get_db)):

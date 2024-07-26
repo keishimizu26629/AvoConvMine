@@ -8,7 +8,7 @@ from utils.embedding import generate_embedding, cosine_similarity
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
-async def save_friend_attributes(db: Session, friend_id: int, processed_attributes: dict):
+async def save_friend_attributes(db: Session, user_id: int, friend_id: int, processed_attributes: dict):
     try:
         for key, value in processed_attributes.items():
             try:
@@ -18,6 +18,7 @@ async def save_friend_attributes(db: Session, friend_id: int, processed_attribut
                     continue
 
                 friend_attr = db.query(FriendAttribute).filter(
+                    FriendAttribute.user_id == user_id,
                     FriendAttribute.friend_id == friend_id,
                     FriendAttribute.attribute_id == attribute.id
                 ).first()
@@ -25,7 +26,7 @@ async def save_friend_attributes(db: Session, friend_id: int, processed_attribut
                 if friend_attr:
                     friend_attr.value = value
                 else:
-                    friend_attr = FriendAttribute(friend_id=friend_id, attribute_id=attribute.id, value=value)
+                    friend_attr = FriendAttribute(user_id=user_id, friend_id=friend_id, attribute_id=attribute.id, value=value)
                     db.add(friend_attr)
             except Exception as e:
                 logger.exception(f"Error processing attribute {key}: {str(e)}")

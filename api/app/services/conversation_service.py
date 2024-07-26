@@ -1,7 +1,10 @@
 import json
 from schemas.conversation import ConversationInput
+from sqlalchemy.orm import Session
+from models.conversation_history import ConversationHistory
 from utils.text_processing import clean_json_response
 from utils.gemini_api import generate_gemini_response
+from datetime import datetime, timezone
 
 async def extract_attributes_service(conversation: ConversationInput):
     try:
@@ -11,7 +14,7 @@ async def extract_attributes_service(conversation: ConversationInput):
         Include all significant details mentioned, using appropriate key names that best describe each piece of information.
 
         Text:
-        {conversation.content}
+        {conversation.context}
 
         Guidelines:
         - Create a JSON object that accurately represents all the information in the text.
@@ -34,3 +37,15 @@ async def extract_attributes_service(conversation: ConversationInput):
 
     except Exception as e:
         return {"error": str(e), "raw_response": response.text if 'response' in locals() else None}
+
+async def save_conversation_history(db: Session, conversation: ConversationInput):
+    new_history = ConversationHistory(
+        user_id=conversation.user_id,
+        friend_id=conversation.friend_id,
+        conversation_date=datetime.now(timezone.utc),
+        context=conversation.context
+    )
+    db.add(new_history)
+    db.commit()
+    db.refresh(new_history)
+    return new_history

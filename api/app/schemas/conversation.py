@@ -1,4 +1,6 @@
 from pydantic import BaseModel
 
 class ConversationInput(BaseModel):
-    content: str
+    user_id: int
+    friend_id: int
+    context: str
