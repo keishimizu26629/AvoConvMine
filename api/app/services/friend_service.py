@@ -42,14 +42,18 @@ async def get_all_attributes(db: Session):
     return db.query(Attribute).all()
 
 async def find_similar_attributes(db: Session, query: str, threshold: float = 0.7):
+    logger.debug(f"Searching for attributes similar to: {query}")
     query_embedding = generate_embedding(query)
+    logger.debug(f"Query embedding: {query_embedding[:5]}...")  # 最初の5要素のみ表示
 
     similar_attributes = []
     all_attributes = db.query(Attribute).all()
+    logger.debug(f"Total attributes in database: {len(all_attributes)}")
 
     for attr in all_attributes:
         attr_embedding = json.loads(attr.embedding)
         similarity = cosine_similarity(query_embedding, attr_embedding)
+        logger.debug(f"Attribute: {attr.name}, Similarity: {similarity}")
         if similarity >= threshold:
             similar_attributes.append({
                 "id": attr.id,
@@ -57,6 +61,7 @@ async def find_similar_attributes(db: Session, query: str, threshold: float = 0.
                 "similarity": similarity
             })
 
+    logger.debug(f"Found {len(similar_attributes)} similar attributes")
     return similar_attributes
 
 def create_friend(db: Session, friend: FriendCreate):

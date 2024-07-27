@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Body
+from fastapi import APIRouter, Depends, Body, HTTPException
 from sqlalchemy.orm import Session
 from controllers.friend_controller import FriendController
 from schemas.friend import FriendCreate, FriendUpdate, FriendInDB
@@ -21,8 +21,11 @@ async def find_similar_attributes(query: str = Body(..., embed=True), db: Sessio
     return await FriendController.find_similar_attributes(query, db)
 
 @router.post("/friends/", response_model=FriendInDB)
-async def create_friend(friend: FriendCreate, db: Session = Depends(get_db)):
-    return await FriendController.create_friend(friend, db)
+def create_friend(friend: FriendCreate, db: Session = Depends(get_db)):
+    try:
+        return FriendController.create_friend(friend, db)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 @router.get("/friends/{friend_id}", response_model=FriendInDB)
 async def read_friend(friend_id: int, db: Session = Depends(get_db)):
