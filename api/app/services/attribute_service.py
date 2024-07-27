@@ -1,47 +1,60 @@
 from sqlalchemy.orm import Session
 from models.friend import Attribute
+from models.friend import FriendAttribute
+from utils.text_processing import clean_attribute_name
+from utils.json_utils import flatten_json
 from utils.embedding import generate_embedding, cosine_similarity
+from utils.text_processing import clean_attribute_name
 import json
 
-SIMILARITY_THRESHOLD = 0.7
-
-def flatten_json(data, prefix=''):
-    items = []
-    for key, value in data.items():
-        new_key = f"{prefix}{key}".replace('_', ' ')
-        if isinstance(value, dict):
-            items.extend(flatten_json(value, f"{new_key} ").items())
-        elif isinstance(value, list):
-            items.append((new_key, ' '.join(map(str, value))))
-        else:
-            items.append((new_key, str(value)))
-    return dict(items)
-
-async def process_attributes(db: Session, attributes_json):
-    flattened_attributes = flatten_json(attributes_json)
+async def process_attributes(db: Session, attributes: dict):
+    flattened_attributes = flatten_json(attributes)
     processed_attributes = {}
-
     for key, value in flattened_attributes.items():
-        attribute_text = f"{key}: {value}"
-        new_embedding = generate_embedding(attribute_text)
+        cleaned_key = clean_attribute_name(key)
 
-        similar_attribute = None
-        max_similarity = 0
+        # Attributeの検索または作成（Embeddingは使用しない）
+        attribute = await find_or_create_attribute(db, cleaned_key)
 
-        for existing_attr in db.query(Attribute).all():
-            existing_embedding = json.loads(existing_attr.embedding)
-            similarity = cosine_similarity(new_embedding, existing_embedding)
-            if similarity > max_similarity and similarity >= SIMILARITY_THRESHOLD:
-                max_similarity = similarity
-                similar_attribute = existing_attr
+        # FriendAttributeの作成（Embeddingを含む）
+        embedding = generate_embedding(f"{cleaned_key}: {value}")
+        friend_attr = FriendAttribute(
+            user_id=attributes['user_id'],
+            friend_id=attributes['friend_id'],
+            attribute_id=attribute.id,
+            value=str(value),
+            embedding=json.dumps(embedding)
+        )
+        db.add(friend_attr)
 
-        if similar_attribute:
-            processed_attributes[similar_attribute.name] = value
-        else:
-            new_attribute = Attribute(name=key, embedding=json.dumps(new_embedding))
-            db.add(new_attribute)
-            db.flush()
-            processed_attributes[key] = value
+        processed_attributes[cleaned_key] = value
 
-    db.commit()
+    await db.commit()
     return processed_attributes
+
+async def find_or_create_attribute(db: Session, attribute_name: str):
+    attribute = db.query(Attribute).filter(Attribute.name == attribute_name).first()
+    if not attribute:
+        attribute = Attribute(name=attribute_name)
+        db.add(attribute)
+        db.commit()
+        db.refresh(attribute)
+    return attribute
+
+async def find_similar_attributes(db: Session, query: str, threshold: float = 0.7):
+    query_embedding = generate_embedding(query)
+
+    similar_attributes = []
+    all_attributes = await db.query(Attribute).all()
+
+    for attr in all_attributes:
+        attr_embedding = generate_embedding(attr.name)
+        similarity = cosine_similarity(query_embedding, attr_embedding)
+        if similarity >= threshold:
+            similar_attributes.append({
+                "id": attr.id,
+                "name": attr.name,
+                "similarity": similarity
+            })
+
+    return similar_attributes

@@ -6,7 +6,8 @@ class FriendBase(BaseModel):
     user_id: int
 
 class FriendCreate(FriendBase):
-    pass
+    name: str
+    user_id: int
 
 class FriendUpdate(BaseModel):
     name: str

@@ -21,7 +21,6 @@ class Attribute(BaseModel):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, unique=True, index=True)
-    embedding = Column(Text)  # Store embedding as JSON string
     created_at = Column(DateTime, default=datetime.now(timezone.utc))
     updated_at = Column(DateTime, default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc))
 
@@ -35,6 +34,7 @@ class FriendAttribute(BaseModel):
     friend_id = Column(Integer, ForeignKey("friends.id"))
     attribute_id = Column(Integer, ForeignKey("attributes.id"))
     value = Column(String)
+    embedding = Column(Text)
     created_at = Column(DateTime, default=datetime.now(timezone.utc))
     updated_at = Column(DateTime, default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc))
 
