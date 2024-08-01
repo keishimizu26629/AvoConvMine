@@ -7,29 +7,42 @@ from utils.embedding import generate_embedding, cosine_similarity
 from utils.text_processing import clean_attribute_name
 import json
 
-async def process_attributes(db: Session, attributes: dict):
+async def process_attributes(db: Session, user_id: int, friend_id: int, attributes: dict):
     flattened_attributes = flatten_json(attributes)
     processed_attributes = {}
+
     for key, value in flattened_attributes.items():
         cleaned_key = clean_attribute_name(key)
 
-        # Attributeの検索または作成（Embeddingは使用しない）
+        # Attributeの検索または作成
         attribute = await find_or_create_attribute(db, cleaned_key)
 
-        # FriendAttributeの作成（Embeddingを含む）
+        # Embeddingの生成
         embedding = generate_embedding(f"{cleaned_key}: {value}")
-        friend_attr = FriendAttribute(
-            user_id=attributes['user_id'],
-            friend_id=attributes['friend_id'],
-            attribute_id=attribute.id,
-            value=str(value),
-            embedding=json.dumps(embedding)
-        )
-        db.add(friend_attr)
+
+        # FriendAttributeの作成または更新
+        friend_attr = db.query(FriendAttribute).filter(
+            FriendAttribute.user_id == user_id,
+            FriendAttribute.friend_id == friend_id,
+            FriendAttribute.attribute_id == attribute.id
+        ).first()
+
+        if friend_attr:
+            friend_attr.value = str(value)
+            friend_attr.embedding = json.dumps(embedding)
+        else:
+            friend_attr = FriendAttribute(
+                user_id=user_id,
+                friend_id=friend_id,
+                attribute_id=attribute.id,
+                value=str(value),
+                embedding=json.dumps(embedding)
+            )
+            db.add(friend_attr)
 
         processed_attributes[cleaned_key] = value
 
-    await db.commit()
+    db.commit()
     return processed_attributes
 
 async def find_or_create_attribute(db: Session, attribute_name: str):
@@ -37,7 +50,7 @@ async def find_or_create_attribute(db: Session, attribute_name: str):
     if not attribute:
         attribute = Attribute(name=attribute_name)
         db.add(attribute)
-        db.commit()
+        db.flush()
         db.refresh(attribute)
     return attribute
 

@@ -5,6 +5,10 @@ from models.conversation_history import ConversationHistory
 from utils.text_processing import clean_json_response
 from utils.gemini_api import generate_gemini_response
 from datetime import datetime, timezone
+import logging
+
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 async def extract_attributes_service(conversation: ConversationInput):
     try:
@@ -33,9 +37,11 @@ async def extract_attributes_service(conversation: ConversationInput):
             attributes_json = json.loads(cleaned_response)
             return {"attributes": attributes_json}
         except json.JSONDecodeError:
-            return {"raw_response": cleaned_response}
+            logger.error(f"Failed to parse JSON: {cleaned_response}")
+            return {"error": "Failed to parse response", "raw_response": cleaned_response}
 
     except Exception as e:
+        logger.exception(f"Error in extract_attributes_service: {str(e)}")
         return {"error": str(e), "raw_response": response.text if 'response' in locals() else None}
 
 async def save_conversation_history(db: Session, conversation: ConversationInput):
