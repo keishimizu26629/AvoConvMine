@@ -1,3 +1,8 @@
+from typing import List
+import numpy as np
+from sklearn.metrics.pairwise import cosine_similarity
+from sqlalchemy.orm import Session
+from utils.embedding import generate_embedding
 from sqlalchemy.orm import Session
 from models.friend import Friend, FriendAttribute, Attribute
 from schemas.friend import FriendCreate, FriendUpdate
@@ -41,7 +46,7 @@ async def save_friend_attributes(db: Session, user_id: int, friend_id: int, proc
 async def get_all_attributes(db: Session):
     return db.query(Attribute).all()
 
-async def find_similar_attributes(db: Session, query: str, threshold: float = 0.7):
+async def find_similar_attributes(db: Session, query: str, threshold: float = 0.7) -> List[dict]:
     logger.debug(f"Searching for attributes similar to: {query}")
     query_embedding = generate_embedding(query)
     logger.debug(f"Query embedding: {query_embedding[:5]}...")  # 最初の5要素のみ表示
@@ -50,15 +55,23 @@ async def find_similar_attributes(db: Session, query: str, threshold: float = 0.
     all_attributes = db.query(Attribute).all()
     logger.debug(f"Total attributes in database: {len(all_attributes)}")
 
-    for attr in all_attributes:
-        attr_embedding = json.loads(attr.embedding)
-        similarity = cosine_similarity(query_embedding, attr_embedding)
+    # 全ての属性名のembeddingを一度に生成し、2D配列に変換
+    attribute_names = [attr.name for attr in all_attributes]
+    attribute_embeddings = np.array([generate_embedding(name) for name in attribute_names])
+
+    # query_embeddingを2D配列に変換
+    query_embedding_2d = np.array(query_embedding).reshape(1, -1)
+
+    # 全ての属性embeddingとクエリembeddingの類似度を一度に計算
+    similarities = cosine_similarity(query_embedding_2d, attribute_embeddings)[0]
+
+    for attr, similarity in zip(all_attributes, similarities):
         logger.debug(f"Attribute: {attr.name}, Similarity: {similarity}")
         if similarity >= threshold:
             similar_attributes.append({
                 "id": attr.id,
                 "name": attr.name,
-                "similarity": similarity
+                "similarity": float(similarity)  # numpyのfloat32をPythonのfloatに変換
             })
 
     logger.debug(f"Found {len(similar_attributes)} similar attributes")

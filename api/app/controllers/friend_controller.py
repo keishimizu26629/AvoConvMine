@@ -19,26 +19,30 @@ class FriendController:
             # Extract attributes from conversation
             logger.debug("Extracting attributes from conversation")
             result = await conversation_service.extract_attributes_service(conversation)
+            logger.debug(f"Extracted result: {result}")
             if "error" in result:
                 logger.error(f"Error in extract_attributes_service: {result['error']}")
                 raise HTTPException(status_code=400, detail=result["error"])
 
-            # Process attributes and check for similarities
-            logger.debug("Processing attributes")
-            processed_attributes = await attribute_service.process_attributes(db, result["attributes"])
+            if "attributes" not in result:
+                logger.error(f"No 'attributes' key in result: {result}")
+                raise HTTPException(status_code=500, detail="Unexpected response format from attribute extraction")
 
-            # Save processed attributes to friend
-            logger.debug("Saving processed attributes")
-            save_result = await friend_service.save_friend_attributes(db, conversation.user_id, conversation.friend_id, processed_attributes)
+            # Process attributes and save them
+            logger.debug("Processing and saving attributes")
+            processed_attributes = await attribute_service.process_attributes(db, conversation.user_id, conversation.friend_id, result["attributes"])
 
             # Save conversation history
             await conversation_service.save_conversation_history(db, conversation)
 
             logger.debug("Attributes extracted and saved successfully")
             return {"message": "Attributes extracted and saved successfully", "attributes": processed_attributes}
+        except KeyError as ke:
+            logger.exception(f"KeyError occurred: {str(ke)}")
+            raise HTTPException(status_code=500, detail=f"Missing key in result: {str(ke)}")
         except Exception as e:
             logger.exception(f"An error occurred: {str(e)}")
-            raise
+            raise HTTPException(status_code=500, detail=str(e))
 
     @staticmethod
     async def get_all_attributes(db: Session = Depends(get_db)):
