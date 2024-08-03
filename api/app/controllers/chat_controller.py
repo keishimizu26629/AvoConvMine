@@ -21,48 +21,25 @@ class ChatController:
             response = Category1Response(
                 who=initial_response.who,
                 what=initial_response.what,
+                status=result["status"],
                 answer=result["answer"],
                 approximation=result.get("approximation"),
                 similarity_category=similarity_category
             )
-        # elif question_category == 2:
-        #     # Category 2の処理
-        #     result = await ChatProcessingService.process_category_2(db, user_id, who, what)
-        #     return ChatResponse(
-        #         question_category=question_category,
-        #         response=Category2Response(
-        #             who=who,
-        #             what=what,
-        #             answer=result
-        #         )
-        #     )
-        # elif question_category == 3:
-        #     # Category 3の処理
-        #     result = await ChatProcessingService.process_category_3(db, user_id, what)
-        #     return ChatResponse(
-        #         question_category=question_category,
-        #         response=Category3Response(
-        #             what=what,
-        #             who=result.get("who"),
-        #             answer=result.get("answer")
-        #         )
-        #     )
-        # elif question_category == 4:
-        #     # Category 4の処理
-        #     description = await ChatProcessingService.process_category_4(db, user_id, who)
-        #     return ChatResponse(
-        #         question_category=question_category,
-        #         response=Category4Response(
-        #             who=who,
-        #             description=description
-        #         )
-        #     )
-        else:
-            # 未知のカテゴリの場合
-            return ChatResponse(
-                question_category=0,
-                response={"error": "Unknown question category"}
+        elif initial_response.question_category == 2:
+            result, similarity_category = await ChatProcessingService.process_category_2(db, user_id, initial_response.who, initial_response.what)
+            response = Category2Response(
+                who=initial_response.who,
+                what=initial_response.what,
+                status=result["status"],
+                answer=result["answer"],
+                approximation=result.get("approximation"),
+                similarity_category=similarity_category
             )
+        else:
+            # 他のカテゴリーの処理（必要に応じて追加）
+            response = None
+
         return ChatResponse(
             question_category=initial_response.question_category,
             response=response

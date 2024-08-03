@@ -5,32 +5,32 @@ class ChatRequest(BaseModel):
     user_id: int
     content: str
 
-class InitialChatResponse(BaseModel):
+class Category1Response(BaseModel):
     who: Optional[str]
     what: str
-    question_category: int
-
-class Category1Response(BaseModel):
-    who: str
-    what: str
-    answer: str
+    status: str
+    answer: Optional[str]
     approximation: Optional[Any]
     similarity_category: str
 
 class Category2Response(BaseModel):
-    who: str
+    who: Optional[str]
     what: str
-    answer: Any
+    status: str
+    answer: Optional[str]
+    approximation: Optional[Any]
+    similarity_category: str
 
 class Category3Response(BaseModel):
     what: str
     who: Optional[str]
     answer: Any
 
-class Category4Response(BaseModel):
-    who: str
-    description: str
-
 class ChatResponse(BaseModel):
     question_category: int
-    response: Union[Category1Response, Category2Response, Category3Response, Category4Response]
+    response: Union[Category1Response, Category2Response, Category3Response]
+
+class InitialChatResponse(BaseModel):
+    who: Optional[str]
+    what: str
+    question_category: int
