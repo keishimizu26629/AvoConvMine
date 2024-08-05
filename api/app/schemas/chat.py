@@ -12,6 +12,7 @@ class Category1Response(BaseModel):
     answer: Optional[str]
     approximation: Optional[Any]
     similarity_category: str
+    final_answer: Optional[str]
 
 class Category2Response(BaseModel):
     who: Optional[str]
@@ -20,11 +21,16 @@ class Category2Response(BaseModel):
     answer: Optional[str]
     approximation: Optional[Any]
     similarity_category: str
+    final_answer: Optional[str]
 
 class Category3Response(BaseModel):
     what: str
     who: Optional[str]
-    answer: Any
+    status: str
+    answer: Optional[str]
+    approximation: Optional[Any]
+    similarity_category: str
+    final_answer: Optional[str]
 
 class ChatResponse(BaseModel):
     question_category: int
@@ -32,5 +38,5 @@ class ChatResponse(BaseModel):
 
 class InitialChatResponse(BaseModel):
     who: Optional[str]
-    what: str
+    what: Optional[str]
     question_category: int
