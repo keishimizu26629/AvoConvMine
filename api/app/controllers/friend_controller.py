@@ -36,7 +36,11 @@ class FriendController:
             await conversation_service.save_conversation_history(db, conversation)
 
             logger.debug("Attributes extracted and saved successfully")
-            return {"message": "Attributes extracted and saved successfully", "attributes": processed_attributes}
+            return {
+                "message": "Attributes extracted and saved successfully",
+                "attributes": processed_attributes,
+                "updated_count": len([attr for attr in processed_attributes if attr not in result["attributes"]])
+            }
         except KeyError as ke:
             logger.exception(f"KeyError occurred: {str(ke)}")
             raise HTTPException(status_code=500, detail=f"Missing key in result: {str(ke)}")

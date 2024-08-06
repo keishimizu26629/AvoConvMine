@@ -1,11 +1,15 @@
 from sqlalchemy.orm import Session
-from models.friend import Attribute
-from models.friend import FriendAttribute
+from models.friend import Attribute, FriendAttribute
 from utils.text_processing import clean_attribute_name
 from utils.json_utils import flatten_json
 from utils.embedding import generate_embedding, cosine_similarity
-from utils.text_processing import clean_attribute_name
+from utils.attribute_keywords import UPDATE_KEYWORDS
 import json
+import logging
+from utils.json_utils import flatten_json_with_prefix
+from sqlalchemy import and_
+
+logger = logging.getLogger(__name__)
 
 async def process_attributes(db: Session, user_id: int, friend_id: int, attributes: dict):
     flattened_attributes = flatten_json(attributes)
@@ -20,25 +24,34 @@ async def process_attributes(db: Session, user_id: int, friend_id: int, attribut
         # Embeddingの生成
         embedding = generate_embedding(f"{cleaned_key}: {value}")
 
-        # FriendAttributeの作成または更新
-        friend_attr = db.query(FriendAttribute).filter(
-            FriendAttribute.user_id == user_id,
-            FriendAttribute.friend_id == friend_id,
-            FriendAttribute.attribute_id == attribute.id
+        # 既存のFriendAttributeを検索
+        existing_friend_attr = db.query(FriendAttribute).filter(
+            and_(
+                FriendAttribute.user_id == user_id,
+                FriendAttribute.friend_id == friend_id,
+                FriendAttribute.attribute_id == attribute.id
+            )
         ).first()
 
-        if friend_attr:
-            friend_attr.value = str(value)
-            friend_attr.embedding = json.dumps(embedding)
+        if existing_friend_attr:
+            # 既存の属性値と新しい値が異なる場合のみ更新
+            if existing_friend_attr.value != str(value):
+                existing_friend_attr.value = str(value)
+                existing_friend_attr.embedding = json.dumps(embedding)
+                logger.debug(f"Updated attribute: {cleaned_key} for friend {friend_id}")
+            else:
+                logger.debug(f"Skipped duplicate attribute: {cleaned_key} for friend {friend_id}")
         else:
-            friend_attr = FriendAttribute(
+            # 新しい属性の場合は作成
+            new_friend_attr = FriendAttribute(
                 user_id=user_id,
                 friend_id=friend_id,
                 attribute_id=attribute.id,
                 value=str(value),
                 embedding=json.dumps(embedding)
             )
-            db.add(friend_attr)
+            db.add(new_friend_attr)
+            logger.debug(f"Added new attribute: {cleaned_key} for friend {friend_id}")
 
         processed_attributes[cleaned_key] = value
 

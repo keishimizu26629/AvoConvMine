@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional, Any, Union
+from typing import Optional, Any, Union, Dict, List
 
 class ChatRequest(BaseModel):
     user_id: int
@@ -8,8 +8,9 @@ class ChatRequest(BaseModel):
 class Category1Response(BaseModel):
     who: Optional[str]
     what: str
+    related_subject: Optional[str]
     status: str
-    answer: Optional[str]
+    answer: Union[str, Dict[str, Any], None]
     approximation: Optional[Any]
     similarity_category: str
     final_answer: Optional[str]
@@ -17,6 +18,7 @@ class Category1Response(BaseModel):
 class Category2Response(BaseModel):
     who: Optional[str]
     what: str
+    related_subject: Optional[str]
     status: str
     answer: Optional[str]
     approximation: Optional[Any]
@@ -24,10 +26,11 @@ class Category2Response(BaseModel):
     final_answer: Optional[str]
 
 class Category3Response(BaseModel):
-    what: str
     who: Optional[str]
+    what: str
+    related_subject: Optional[str]
     status: str
-    answer: Optional[str]
+    answer: Optional[List[Dict[str, Any]]]
     approximation: Optional[Any]
     similarity_category: str
     final_answer: Optional[str]
@@ -38,5 +41,6 @@ class ChatResponse(BaseModel):
 
 class InitialChatResponse(BaseModel):
     who: Optional[str]
-    what: Optional[str]
+    what: str
+    related_subject: Optional[str]
     question_category: int

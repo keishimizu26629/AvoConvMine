@@ -1,10 +1,8 @@
 import logging
-from typing import Tuple, Dict, Any, List
+from typing import Tuple, Dict, Any, List, Optional
 from sqlalchemy.orm import Session
-from models.friend import Attribute
-from models.friend import FriendAttribute
-from models.friend import Friend, FriendAttribute, Attribute
-from utils.chat_processing_utils import find_attribute, find_friend, get_friend_attribute, get_all_friend_attributes, get_all_friend_attributes, get_friends_by_attribute
+from models.friend import Attribute, Friend, FriendAttribute
+from utils.chat_processing_utils import find_friend, get_all_friend_attributes
 from utils.embedding import generate_embedding, cosine_similarity_single
 from utils.gemini_api import generate_gemini_response
 from utils.text_processing import clean_json_response
@@ -27,11 +25,14 @@ class ChatProcessingService:
             Result: {json.dumps(result, indent=2)}
 
             Please provide a concise and natural-sounding response that answers the question directly.
-            If the status is "Yes", confirm the information.
+            If the status is "Yes", confirm the information and provide relevant details from the 'answer' field.
             If the status is "No" or "Probably", explain that the information is not confirmed or is uncertain.
+            Include specific details from the 'answer' and 'approximation' fields if available.
             The response should be in the same language as the question and should sound natural and conversational.
+
+            Your response should be a simple string, not a JSON object. Start with a clear Yes or No if applicable.
             """
-        elif category == 2:
+        if category == 2:
             prompt = f"""
             Based on the following question and result, generate a human-readable answer:
 
@@ -39,12 +40,12 @@ class ChatProcessingService:
             Result: {json.dumps(result, indent=2)}
 
             Please provide a concise and natural-sounding response that directly answers the question.
-            Include the specific information (answer) in your response if available.
-            If the information is not found, explain that it's not available.
+            If the status is "Found", include the specific information from the 'answer' field in your response.
+            If the status is "Not Found", explain that the information is not available or couldn't be determined.
             The response should be in the same language as the question and should sound natural and conversational.
-            Do not start the answer with "Yes" or "No".
+            Do not include phrases like "Based on the information provided" or "According to the result".
             """
-        if category == 3:
+        elif category == 3:
             prompt = f"""
             Based on the following question and result, generate a human-readable answer:
 
@@ -52,6 +53,7 @@ class ChatProcessingService:
             Result: {json.dumps(result, indent=2)}
 
             Please provide a concise and natural-sounding response that lists all the people who match the criteria.
+            Use the information from the 'answer' field to provide details about the matching individuals.
             If no one matches, state that no one was found.
             The response should be in the same language as the question and should sound natural and conversational.
             """
@@ -61,11 +63,19 @@ class ChatProcessingService:
         gemini_response = await generate_gemini_response(prompt)
         final_answer = clean_json_response(gemini_response.text)
 
+        # 回答が JSON 形式になっていないか確認し、なっていれば適切に処理する
+        try:
+            parsed_answer = json.loads(final_answer)
+            if isinstance(parsed_answer, dict):
+                return parsed_answer.get('response', final_answer)
+        except json.JSONDecodeError:
+            pass
+
         return final_answer
 
     @staticmethod
-    async def process_category_1(db: Session, user_id: int, who: str, what: str) -> Tuple[Dict[str, Any], str]:
-        logger.debug(f"Processing category 1 for user_id: {user_id}, who: {who}, what: {what}")
+    async def process_category_1(db: Session, user_id: int, who: str, what: str, related_subject: Optional[str] = None) -> Tuple[Dict[str, Any], str]:
+        logger.debug(f"Processing category 1 for user_id: {user_id}, who: {who}, what: {what}, related_subject: {related_subject}")
 
         friend = find_friend(db, who)
         if not friend:
@@ -79,61 +89,60 @@ class ChatProcessingService:
 
         what_embedding = generate_embedding(what)
 
-        # 関連する属性名を取得
-        related_attributes = []
-        for category, synonyms in ATTRIBUTE_SYNONYMS.items():
-            if any(synonym.lower() in what.lower() for synonym in synonyms):
-                related_attributes.extend(synonyms)
+        # 関連する属性を特定
+        relevant_attributes = []
+        for attr_info in all_attributes:
+            attr_text = f"{attr_info.name} {attr_info.value}"
+            attr_similarity = cosine_similarity_single(what_embedding, generate_embedding(attr_text))
 
-        # 位置情報の優先順位を設定
-        location_priority = None
-        if "live" in what.lower():
-            location_priority = LOCATION_PRIORITIES["live"]
-        elif "work" in what.lower():
-            location_priority = LOCATION_PRIORITIES["work"]
+            category_similarities = [cosine_similarity_single(what_embedding, generate_embedding(syn))
+                                    for synonyms in ATTRIBUTE_SYNONYMS.values()
+                                    for syn in synonyms]
+            category_similarity = max(category_similarities) if category_similarities else 0
 
-        best_attribute = None
-        best_similarity = -1
+            if attr_similarity > 0.5 or category_similarity > 0.5:
+                relevant_attributes.append((attr_info, max(attr_similarity, category_similarity)))
 
-        for attr in all_attributes:
-            if related_attributes and attr.name not in related_attributes:
-                continue
+        if not relevant_attributes:
+            logger.debug("No relevant attributes found")
+            return {"status": "No", "answer": None, "approximation": "No relevant attributes found"}, "low"
 
-            # 位置情報の優先順位に基づいて類似度にボーナスを与える
-            bonus = 0
-            if location_priority:
-                try:
-                    priority_index = location_priority.index(attr.name)
-                    bonus = (len(location_priority) - priority_index) * 0.1  # 優先度に応じてボーナスを付与
-                except ValueError:
-                    pass
+        # 類似度でソートし、最も関連性の高い属性を選択
+        relevant_attributes.sort(key=lambda x: x[1], reverse=True)
+        best_attribute_info, best_similarity = relevant_attributes[0]
 
-            attr_embedding = generate_embedding(f"{attr.name}: {attr.value}")
-            similarity = cosine_similarity_single(what_embedding, attr_embedding) + bonus
-            logger.debug(f"Attribute: {attr.name}, Value: {attr.value}, Similarity: {similarity}")
-            if similarity > best_similarity:
-                best_similarity = similarity
-                best_attribute = attr
+        # 関連する属性の情報を集約
+        aggregated_info = {}
+        for attr_info, _ in relevant_attributes:
+            keys = attr_info.name.split('_')
+            current = aggregated_info
+            for key in keys[:-1]:
+                if key not in current:
+                    current[key] = {}
+                current = current[key]
+            current[keys[-1]] = attr_info.value
 
-        logger.debug(f"Best matching attribute: {best_attribute.name if best_attribute else 'None'} with similarity {best_similarity}")
+        logger.debug(f"Best matching attribute: {best_attribute_info.name} with similarity {best_similarity}")
 
         # Gemini APIを使用して推論
         prompt = f"""
         Question: Does {who} {what}?
         Known information about {who}:
-        {json.dumps([{"name": attr.name, "value": attr.value} for attr in all_attributes], indent=2)}
-        Best matching attribute: {best_attribute.name if best_attribute else 'None'} with value: {best_attribute.value if best_attribute else 'None'}
+        {json.dumps(aggregated_info, indent=2)}
+        Best matching attribute: {best_attribute_info.name} with value: {best_attribute_info.value}
 
-        Based on this information, answer the following:
-        1. How likely is it that the answer to the question is Yes? (0-1 scale)
-        2. What is the most relevant piece of information to answer this question?
-        3. Provide a brief explanation for your reasoning.
+        Based on this information, please provide:
+        1. A likelihood score (0-1 scale) that the answer to the question is Yes.
+        2. The most relevant piece of information to answer this question.
+        3. A detailed explanation of your reasoning, including specific details from the known information.
+        4. A final, concise, and natural-sounding answer to the original question that incorporates all of the above information.
 
         Return a JSON object with the following format:
         {{
             "likelihood": "A value between 0 and 1",
             "relevant_info": "The most relevant piece of information",
-            "explanation": "Your explanation"
+            "explanation": "Your detailed explanation including specific information",
+            "final_answer": "A concise, natural-sounding answer to the original question"
         }}
         """
 
@@ -156,36 +165,32 @@ class ChatProcessingService:
 
         result = {
             "status": status,
-            "answer": best_attribute.value if best_attribute else None,
+            "answer": best_attribute_info.value,
             "approximation": {
-                "attribute": best_attribute.name,
-                "value": best_attribute.value
-            } if best_attribute else None,
+                "attribute": best_attribute_info.name,
+                "value": best_attribute_info.value
+            },
             "explanation": gemini_result['explanation'],
-            "relevant_info": gemini_result['relevant_info']
+            "relevant_info": gemini_result['relevant_info'],
+            "final_answer": gemini_result['final_answer']
         }
-
-        final_answer = await ChatProcessingService.generate_final_answer(f"Does {who} {what}?", result, 1)
-        result["final_answer"] = final_answer
 
         return result, confidence
 
     @staticmethod
-    async def process_category_2(db: Session, user_id: int, who: str, what: str) -> Tuple[Dict[str, Any], str]:
-        logger.debug(f"Processing category 2 for user_id: {user_id}, who: {who}, what: {what}")
+    async def process_category_2(db: Session, user_id: int, who: str, what: str, related_subject: Optional[str] = None) -> Tuple[Dict[str, Any], str]:
+        logger.debug(f"Processing category 2 for user_id: {user_id}, who: {who}, what: {what}, related_subject: {related_subject}")
 
         friend = find_friend(db, who)
         if not friend:
-            logger.debug("Friend not found, returning 'No' with low confidence")
-            return {"status": "No", "answer": None, "approximation": "Friend not found"}, "low"
+            logger.debug("Friend not found, returning 'Not Found' with low confidence")
+            return {"status": "Not Found", "answer": None, "approximation": "Friend not found"}, "low"
 
-        # 全ての属性を取得
         all_attributes = get_all_friend_attributes(db, friend.id, user_id)
         if not all_attributes:
             logger.debug(f"No attributes found for friend {friend.name}")
-            return {"status": "No", "answer": None, "approximation": "No attributes found"}, "low"
+            return {"status": "Not Found", "answer": None, "approximation": "No attributes found"}, "low"
 
-        # 質問のembeddingを生成
         what_embedding = generate_embedding(what)
 
         # 関連する属性名を取得
@@ -195,47 +200,45 @@ class ChatProcessingService:
                 related_attributes.extend(synonyms)
 
         # 位置情報の優先順位を設定
-        location_priority = None
-        if "live" in what.lower():
-            location_priority = LOCATION_PRIORITIES["live"]
-        elif "work" in what.lower():
-            location_priority = LOCATION_PRIORITIES["work"]
+        location_priority = LOCATION_PRIORITIES.get("live", [])
 
-        # 最も類似度の高い属性を見つける
         best_attribute = None
         best_similarity = -1
 
         for attr in all_attributes:
-            if related_attributes and attr.name not in related_attributes:
-                continue
+            attr_name_lower = attr.name.lower()
 
-            # 位置情報の優先順位に基づいて類似度にボーナスを与える
-            bonus = 0
-            if location_priority:
-                try:
-                    priority_index = location_priority.index(attr.name)
-                    bonus = (len(location_priority) - priority_index) * 0.1  # 優先度に応じてボーナスを付与
-                except ValueError:
-                    pass
+            # 優先度ボーナスを計算
+            priority_bonus = 0
+            if attr.name in location_priority:
+                priority_bonus = (len(location_priority) - location_priority.index(attr.name)) * 0.1
 
-            attr_embedding = generate_embedding(attr.name)
-            similarity = cosine_similarity_single(what_embedding, attr_embedding) + bonus
-            logger.debug(f"Attribute: {attr.name}, Similarity: {similarity}")
-            if similarity > best_similarity:
-                best_similarity = similarity
+            # 属性名の類似度を計算
+            name_similarity = cosine_similarity_single(what_embedding, generate_embedding(attr.name))
+
+            # 属性値の類似度を計算
+            value_similarity = cosine_similarity_single(what_embedding, generate_embedding(attr.value))
+
+            # 総合的な類似度を計算
+            total_similarity = max(name_similarity, value_similarity) + priority_bonus
+
+            logger.debug(f"Attribute: {attr.name}, Value: {attr.value}, Similarity: {total_similarity}")
+
+            if total_similarity > best_similarity:
+                best_similarity = total_similarity
                 best_attribute = attr
 
         logger.debug(f"Best matching attribute: {best_attribute.name if best_attribute else 'None'} with similarity {best_similarity}")
 
-        if best_similarity >= 0.5:  # 類似度のしきい値を調整
+        if best_similarity >= 0.5:
             result = {
-                "status": "Yes",
+                "status": "Found",
                 "answer": best_attribute.value,
                 "approximation": {"attribute": best_attribute.name, "value": best_attribute.value}
             }
             confidence = "high" if best_similarity >= 0.8 else "medium"
         else:
-            result = {"status": "No", "answer": None, "approximation": "No matching attribute found"}
+            result = {"status": "Not Found", "answer": None, "approximation": "No matching attribute found"}
             confidence = "low"
 
         final_answer = await ChatProcessingService.generate_final_answer(f"What is {who}'s {what}?", result, 2)
@@ -244,84 +247,96 @@ class ChatProcessingService:
         return result, confidence
 
     @staticmethod
-    async def process_category_3(db: Session, user_id: int, what: str) -> Tuple[Dict[str, Any], str]:
-        logger.debug(f"Processing category 3 for user_id: {user_id}, what: {what}")
+    async def process_category_3(db: Session, user_id: int, attributes: List[str]) -> Tuple[Dict[str, Any], str]:
+        logger.debug(f"Processing category 3 for user_id: {user_id}, attributes: {attributes}")
 
-        # 全ての属性を取得
-        all_attributes = db.query(Attribute.name).distinct().all()
-        all_attribute_names = [attr.name for attr in all_attributes]
+        # 各属性のembeddingを生成
+        attribute_embeddings = [generate_embedding(attr) for attr in attributes]
 
-        # 質問のembeddingを生成
-        what_embedding = generate_embedding(what)
-
-        # 各属性との類似度を計算
-        attribute_similarities = []
-        for attr_name in all_attribute_names:
-            attr_embedding = generate_embedding(attr_name)
-            similarity = cosine_similarity_single(what_embedding, attr_embedding)
-            attribute_similarities.append((attr_name, similarity))
-
-        # 類似度でソートし、上位の属性を選択
-        attribute_similarities.sort(key=lambda x: x[1], reverse=True)
-        relevant_attributes = [attr[0] for attr in attribute_similarities[:5]]  # 上位5つの属性を使用
-
-        logger.debug(f"Selected relevant attributes: {relevant_attributes}")
-
-        # 関連する属性に基づいて友人を検索
-        matching_friends = (
-            db.query(Friend)
+        # すべての友人属性を取得
+        all_friend_attributes = (
+            db.query(Friend, Attribute, FriendAttribute)
             .join(FriendAttribute, Friend.id == FriendAttribute.friend_id)
             .join(Attribute, FriendAttribute.attribute_id == Attribute.id)
-            .filter(
-                FriendAttribute.user_id == user_id,
-                Attribute.name.in_(relevant_attributes)
-            )
-            .distinct()
+            .filter(FriendAttribute.user_id == user_id)
             .all()
         )
 
-        logger.debug(f"Found {len(matching_friends)} matching friends")
+        matching_friends = {}
+        for friend, attribute, friend_attribute in all_friend_attributes:
+            attr_text = f"{attribute.name}: {friend_attribute.value}"
+            attr_embedding = generate_embedding(attr_text)
 
-        if not matching_friends:
-            result = {"status": "No", "answer": None, "approximation": "No matching friends found"}
-            final_answer = await ChatProcessingService.generate_final_answer(f"Who has a {what}?", result, 3)
+            # 各属性との類似度を計算
+            similarities = [cosine_similarity_single(attr_embedding, attr_emb) for attr_emb in attribute_embeddings]
+            max_similarity = max(similarities)
+
+            if max_similarity > 0.5:  # この閾値は調整可能
+                if friend.id not in matching_friends:
+                    matching_friends[friend.id] = {"name": friend.name, "attributes": [], "match_count": 0, "total_similarity": 0}
+                matching_friends[friend.id]["attributes"].append({
+                    "name": attribute.name,
+                    "value": friend_attribute.value,
+                    "similarity": max_similarity
+                })
+                matching_friends[friend.id]["match_count"] += 1
+                matching_friends[friend.id]["total_similarity"] += max_similarity
+
+        # 完全一致と部分一致を分類
+        exact_matches = []
+        partial_matches = []
+        for friend_data in matching_friends.values():
+            if friend_data["match_count"] == len(attributes):
+                exact_matches.append(friend_data)
+            else:
+                partial_matches.append(friend_data)
+
+        # 類似度でソート
+        exact_matches.sort(key=lambda x: x["total_similarity"], reverse=True)
+        partial_matches.sort(key=lambda x: x["total_similarity"], reverse=True)
+
+        all_matches = exact_matches + partial_matches
+
+        logger.debug(f"Found {len(exact_matches)} exact matches and {len(partial_matches)} partial matches")
+
+        if not all_matches:
+            result = {"status": "Not Found", "answer": None, "approximation": "No matching friends found"}
+            final_answer = await ChatProcessingService.generate_final_answer(f"Who has {' and '.join(attributes)}?", result, 3)
             result["final_answer"] = final_answer
             return result, "low"
 
-        # 各友人の関連属性を取得
-        friend_data = []
-        for friend in matching_friends:
-            attributes = (
-                db.query(Attribute.name, FriendAttribute.value)
-                .join(FriendAttribute, Attribute.id == FriendAttribute.attribute_id)
-                .filter(
-                    FriendAttribute.friend_id == friend.id,
-                    FriendAttribute.user_id == user_id,
-                    Attribute.name.in_(relevant_attributes)
-                )
-                .all()
-            )
-            friend_data.append({
-                "name": friend.name,
-                "attributes": dict(attributes)
-            })
-
         # Gemini APIを使用して回答を生成
         prompt = f"""
-        Question: Who has a {what}?
-        Matching friends and their relevant attributes:
-        {json.dumps(friend_data, indent=2)}
+        Question: Who has {' and '.join(attributes)}?
+        Exact matches:
+        {json.dumps(exact_matches, indent=2)}
+        Partial matches:
+        {json.dumps(partial_matches, indent=2)}
 
         Based on this information:
-        1. List all the people who have a {what}.
-        2. How confident are you in this answer? (0-1 scale)
-        3. Provide a brief explanation for your reasoning.
+        1. List all the people who exactly match all the criteria, explaining why they match.
+        2. If there are no exact matches, list the people who partially match, explaining which criteria they meet.
+        3. How confident are you in this answer? (0-1 scale)
+        4. Provide a brief explanation for your reasoning, including why each person matches or partially matches the criteria.
 
         Return a JSON object with the following format:
         {{
-            "matching_people": ["Name1", "Name2", ...],
+            "exact_matches": [
+                {{
+                    "name": "Name1",
+                    "reason": "Reason why this person exactly matches all criteria"
+                }},
+                ...
+            ],
+            "partial_matches": [
+                {{
+                    "name": "Name2",
+                    "reason": "Reason why this person partially matches the criteria"
+                }},
+                ...
+            ],
             "confidence": "A value between 0 and 1",
-            "explanation": "Your explanation"
+            "explanation": "Your overall explanation"
         }}
         """
 
@@ -340,13 +355,16 @@ class ChatProcessingService:
             confidence_level = "low"
 
         result = {
-            "status": "Found" if gemini_result['matching_people'] else "Not Found",
-            "answer": gemini_result['matching_people'],
+            "status": "Found" if gemini_result['exact_matches'] or gemini_result['partial_matches'] else "Not Found",
+            "answer": {
+                "exact_matches": gemini_result['exact_matches'],
+                "partial_matches": gemini_result['partial_matches']
+            },
             "approximation": None,
             "explanation": gemini_result['explanation']
         }
 
-        final_answer = await ChatProcessingService.generate_final_answer(f"Who has a {what}?", result, 3)
+        final_answer = await ChatProcessingService.generate_final_answer(f"Who has {' and '.join(attributes)}?", result, 3)
         result["final_answer"] = final_answer
 
         return result, confidence_level

@@ -17,18 +17,31 @@ class ChatController:
         logger.debug(f"Initial ChatResponse: {initial_response}")
 
         if initial_response.question_category == 1:
-            result, similarity_category = await ChatProcessingService.process_category_1(db, user_id, initial_response.who, initial_response.what)
+            result, similarity_category = await ChatProcessingService.process_category_1(
+                db,
+                user_id,
+                initial_response.who,
+                initial_response.what,
+                initial_response.related_subject
+            )
             response = Category1Response(
                 who=initial_response.who,
                 what=initial_response.what,
+                related_subject=initial_response.related_subject,
                 status=result["status"],
-                answer=result["answer"],
+                answer=result["answer"] if isinstance(result["answer"], (str, dict)) else None,
                 approximation=result.get("approximation"),
                 similarity_category=similarity_category,
                 final_answer=result.get("final_answer")
             )
         elif initial_response.question_category == 2:
-            result, similarity_category = await ChatProcessingService.process_category_2(db, user_id, initial_response.who, initial_response.what)
+            result, similarity_category = await ChatProcessingService.process_category_2(
+                db,
+                user_id,
+                initial_response.who,
+                initial_response.what,
+                initial_response.related_subject
+            )
             response = Category2Response(
                 who=initial_response.who,
                 what=initial_response.what,
@@ -39,10 +52,14 @@ class ChatController:
                 final_answer=result.get("final_answer")
             )
         elif initial_response.question_category == 3:
-            result, similarity_category = await ChatProcessingService.process_category_3(db, user_id, initial_response.what)
+            result, similarity_category = await ChatProcessingService.process_category_3(
+                db,
+                user_id,
+                initial_response.attributes  # 'what'の代わりに'attributes'を使用
+            )
             response = Category3Response(
                 who=initial_response.who,
-                what=initial_response.what,
+                attributes=initial_response.attributes,  # 'what'の代わりに'attributes'を使用
                 status=result["status"],
                 answer=result["answer"],
                 approximation=result.get("approximation"),
@@ -57,6 +74,7 @@ class ChatController:
             question_category=initial_response.question_category,
             response=response
         )
+
     @staticmethod
     async def process_test_chat(user_id: int, content: str, db: Session = Depends(get_db)) -> InitialChatResponse:
         return await ChatService.process_chat(user_id, content, db)

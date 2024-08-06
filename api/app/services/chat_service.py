@@ -13,8 +13,9 @@ class ChatService:
         analysis = await ChatService.analyze_question(content)
 
         return InitialChatResponse(
-            who=analysis.get("person"),
+            who=analysis.get("primary_subject"),
             what=analysis.get("attribute"),
+            related_subject=analysis.get("related_subject"),
             question_category=ChatService.get_category_number(analysis.get("category"))
         )
 
@@ -26,51 +27,47 @@ class ChatService:
         Return a JSON object in the following format:
         {{
             "category": "Question category (①, ②, ③, or ④)",
-            "person": "Name of the person if the question is about a specific person, otherwise null",
-            "attribute": "The exact phrase or words used in the question to describe the attribute or information being asked about, or 'general description' for category ④ questions",
-            "explanation": "Brief explanation of the classification"
+            "primary_subject": "The main person or group the question is about, or 'unknown' if not specified",
+            "related_subject": "Any related person or thing mentioned in the question, or null if none",
+            "attribute": "The specific attribute or information being asked about",
+            "relation": "The relationship between the primary_subject and related_subject, if applicable",
+            "explanation": "Brief explanation of the classification and analysis"
         }}
 
         Category definitions with examples:
-        ①: Questions asking to confirm or inquire about a specific attribute of a specific person
-        Pattern: "Is/Are/Does/Do [Person] [Attribute]?" or similar confirmatory or inquiry questions
+        ①: Questions asking to confirm or inquire about a specific attribute of a specific person or their relation
+        Pattern: "Is/Are/Does/Do [Person/Person's relation] [Attribute]?" or similar confirmatory or inquiry questions
         Examples:
         - Is John an engineer?
         - Are Mary and Tom married?
-        - Was Sarah born in New York?
-        - Does Karen run a florist in Tokyo?
-        - Do the Smiths live in California?
+        - Does Karen have a child?
 
-        ②: Questions asking about a specific attribute of a specific person, typically starting with "What", "Where", "When", "How"
-        Pattern: "What/Where/When/How is/was [Person]'s [Attribute]?" or similar specific inquiries
+        ②: Questions asking about a specific attribute of a specific person or their relation, typically starting with "What", "Where", "When", "How"
+        Pattern: "What/Where/When/How is/was [Person/Person's relation]'s [Attribute]?" or similar specific inquiries
         Examples:
         - What is David's occupation?
         - Where does Emma live?
-        - How old is Michael?
-        - When did Lisa graduate?
+        - How old is Michael's daughter?
 
-        ③: Questions asking about a person with a specific attribute
-        Pattern: "Who is/are the [Attribute]?" or similar questions identifying people by attributes
+        ③: Questions asking about a person or people with a specific attribute
+        Pattern: "Who is/are/has [Attribute]?" or similar questions identifying people by attributes
         Examples:
         - Who is the tallest person in the group?
         - Which employee has the most experience?
         - Who are the new team members?
+        - Who has a daughter?
+        - Who lives in Tokyo?
 
         ④: Questions asking for a general description or overview of a specific person
         Pattern: Open-ended questions about a person without specifying an attribute
         Examples:
         - Can you tell me about Lisa?
         - What do you know about Dr. Johnson?
-        - How would you describe Alex?
 
         Important:
         - Pay close attention to the structure and intent of the question.
-        - For category ①, the question must be seeking confirmation or inquiry about a specific attribute, often using "Is", "Are", "Does", "Do", etc.
-        - For category ②, the question must be asking about a specific attribute of a named person, typically starting with "What", "Where", "When", "How", etc.
-        - For category ③, the question must be asking to identify a person or people based on an attribute.
-        - For category ④, the question must be open-ended and seeking general information about a person.
-
-        Note: For the "attribute" field, use the exact words or phrase from the question that describe what is being asked about. For category ④, use 'general description'.
+        - For category ③ questions, the primary_subject should be 'unknown' unless a specific group is mentioned.
+        - The attribute for category ③ questions should be the characteristic or possession being asked about.
 
         Note: Return only the JSON object without any additional explanation.
         """
