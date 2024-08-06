@@ -55,11 +55,12 @@ class ChatController:
             result, similarity_category = await ChatProcessingService.process_category_3(
                 db,
                 user_id,
-                initial_response.attributes  # 'what'の代わりに'attributes'を使用
+                initial_response.what
             )
             response = Category3Response(
                 who=initial_response.who,
-                attributes=initial_response.attributes,  # 'what'の代わりに'attributes'を使用
+                what=initial_response.what,
+                related_subject=initial_response.related_subject,
                 status=result["status"],
                 answer=result["answer"],
                 approximation=result.get("approximation"),

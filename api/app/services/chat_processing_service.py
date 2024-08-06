@@ -1,8 +1,10 @@
 import logging
 from typing import Tuple, Dict, Any, List, Optional
 from sqlalchemy.orm import Session
-from models.friend import Attribute, Friend, FriendAttribute
-from utils.chat_processing_utils import find_friend, get_all_friend_attributes
+from models.friend import Attribute
+from models.friend import FriendAttribute
+from models.friend import Friend, FriendAttribute, Attribute
+from utils.chat_processing_utils import find_attribute, find_friend, get_friend_attribute, get_all_friend_attributes, get_all_friend_attributes, get_friends_by_attribute
 from utils.embedding import generate_embedding, cosine_similarity_single
 from utils.gemini_api import generate_gemini_response
 from utils.text_processing import clean_json_response
@@ -247,11 +249,11 @@ class ChatProcessingService:
         return result, confidence
 
     @staticmethod
-    async def process_category_3(db: Session, user_id: int, attributes: List[str]) -> Tuple[Dict[str, Any], str]:
-        logger.debug(f"Processing category 3 for user_id: {user_id}, attributes: {attributes}")
+    async def process_category_3(db: Session, user_id: int, what: str, related_subject: Optional[str] = None) -> Tuple[Dict[str, Any], str]:
+        logger.debug(f"Processing category 3 for user_id: {user_id}, what: {what}")
 
-        # 各属性のembeddingを生成
-        attribute_embeddings = [generate_embedding(attr) for attr in attributes]
+        # 質問のembeddingを生成
+        what_embedding = generate_embedding(what)
 
         # すべての友人属性を取得
         all_friend_attributes = (
@@ -266,72 +268,46 @@ class ChatProcessingService:
         for friend, attribute, friend_attribute in all_friend_attributes:
             attr_text = f"{attribute.name}: {friend_attribute.value}"
             attr_embedding = generate_embedding(attr_text)
+            similarity = cosine_similarity_single(what_embedding, attr_embedding)
 
-            # 各属性との類似度を計算
-            similarities = [cosine_similarity_single(attr_embedding, attr_emb) for attr_emb in attribute_embeddings]
-            max_similarity = max(similarities)
-
-            if max_similarity > 0.5:  # この閾値は調整可能
+            if similarity > 0.5:  # この閾値は調整可能
                 if friend.id not in matching_friends:
-                    matching_friends[friend.id] = {"name": friend.name, "attributes": [], "match_count": 0, "total_similarity": 0}
+                    matching_friends[friend.id] = {"name": friend.name, "attributes": [], "max_similarity": 0}
                 matching_friends[friend.id]["attributes"].append({
                     "name": attribute.name,
                     "value": friend_attribute.value,
-                    "similarity": max_similarity
+                    "similarity": similarity
                 })
-                matching_friends[friend.id]["match_count"] += 1
-                matching_friends[friend.id]["total_similarity"] += max_similarity
-
-        # 完全一致と部分一致を分類
-        exact_matches = []
-        partial_matches = []
-        for friend_data in matching_friends.values():
-            if friend_data["match_count"] == len(attributes):
-                exact_matches.append(friend_data)
-            else:
-                partial_matches.append(friend_data)
+                matching_friends[friend.id]["max_similarity"] = max(matching_friends[friend.id]["max_similarity"], similarity)
 
         # 類似度でソート
-        exact_matches.sort(key=lambda x: x["total_similarity"], reverse=True)
-        partial_matches.sort(key=lambda x: x["total_similarity"], reverse=True)
+        matching_friends = sorted(matching_friends.values(), key=lambda x: x["max_similarity"], reverse=True)
 
-        all_matches = exact_matches + partial_matches
+        logger.debug(f"Found {len(matching_friends)} matching friends")
 
-        logger.debug(f"Found {len(exact_matches)} exact matches and {len(partial_matches)} partial matches")
-
-        if not all_matches:
+        if not matching_friends:
             result = {"status": "Not Found", "answer": None, "approximation": "No matching friends found"}
-            final_answer = await ChatProcessingService.generate_final_answer(f"Who has {' and '.join(attributes)}?", result, 3)
+            final_answer = await ChatProcessingService.generate_final_answer(f"Who has a {what}?", result, 3)
             result["final_answer"] = final_answer
             return result, "low"
 
         # Gemini APIを使用して回答を生成
         prompt = f"""
-        Question: Who has {' and '.join(attributes)}?
-        Exact matches:
-        {json.dumps(exact_matches, indent=2)}
-        Partial matches:
-        {json.dumps(partial_matches, indent=2)}
+        Question: Who has a {what}?
+        Matching friends and their relevant attributes:
+        {json.dumps(matching_friends, indent=2)}
 
         Based on this information:
-        1. List all the people who exactly match all the criteria, explaining why they match.
-        2. If there are no exact matches, list the people who partially match, explaining which criteria they meet.
-        3. How confident are you in this answer? (0-1 scale)
-        4. Provide a brief explanation for your reasoning, including why each person matches or partially matches the criteria.
+        1. List all the people who have a {what}, sorted by relevance.
+        2. How confident are you in this answer? (0-1 scale)
+        3. Provide a brief explanation for your reasoning, including why each person matches the criteria.
 
         Return a JSON object with the following format:
         {{
-            "exact_matches": [
+            "matching_people": [
                 {{
                     "name": "Name1",
-                    "reason": "Reason why this person exactly matches all criteria"
-                }},
-                ...
-            ],
-            "partial_matches": [
-                {{
-                    "name": "Name2",
-                    "reason": "Reason why this person partially matches the criteria"
+                    "reason": "Reason why this person matches"
                 }},
                 ...
             ],
@@ -355,16 +331,13 @@ class ChatProcessingService:
             confidence_level = "low"
 
         result = {
-            "status": "Found" if gemini_result['exact_matches'] or gemini_result['partial_matches'] else "Not Found",
-            "answer": {
-                "exact_matches": gemini_result['exact_matches'],
-                "partial_matches": gemini_result['partial_matches']
-            },
+            "status": "Found" if gemini_result['matching_people'] else "Not Found",
+            "answer": gemini_result['matching_people'],
             "approximation": None,
             "explanation": gemini_result['explanation']
         }
 
-        final_answer = await ChatProcessingService.generate_final_answer(f"Who has {' and '.join(attributes)}?", result, 3)
+        final_answer = await ChatProcessingService.generate_final_answer(f"Who has a {what}?", result, 3)
         result["final_answer"] = final_answer
 
         return result, confidence_level
