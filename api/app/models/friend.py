@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Text
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Text, Date, JSON, Boolean
 from sqlalchemy.orm import relationship
 from database import BaseModel
 from datetime import datetime, timezone
@@ -35,6 +35,7 @@ class FriendAttribute(BaseModel):
     attribute_id = Column(Integer, ForeignKey("attributes.id"))
     value = Column(String)
     embedding = Column(Text)
+    enabled = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.now(timezone.utc))
     updated_at = Column(DateTime, default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc))
 
