@@ -1,12 +1,15 @@
-from fastapi import APIRouter, Depends, Body, HTTPException
+from fastapi import APIRouter, Depends, Body, HTTPException, Request
 from sqlalchemy.orm import Session
 from controllers.friend_controller import FriendController
 from schemas.friend import FriendCreate, FriendUpdate, FriendInDB
 from schemas.conversation import ConversationInput
 from schemas.attribute import AttributeSchema
+from utils.jwt import get_current_user_id
 from database import get_db
+import logging
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 @router.post("/friends/extract_attributes")
 async def extract_attributes(conversation: ConversationInput = Body(...), db: Session = Depends(get_db)):
@@ -21,11 +24,19 @@ async def find_similar_attributes(query: str = Body(..., embed=True), db: Sessio
     return await FriendController.find_similar_attributes(query, db)
 
 @router.post("/friends/", response_model=FriendInDB)
-def create_friend(friend: FriendCreate, db: Session = Depends(get_db)):
+async def create_friend(
+    friend: FriendCreate,
+    db: Session = Depends(get_db),
+    current_user_id: int = Depends(get_current_user_id)
+):
     try:
-        return FriendController.create_friend(friend, db)
+        return FriendController.create_friend(friend, db, current_user_id)
+    except HTTPException as e:
+        # HTTPExceptionをそのまま再発生させる
+        raise e
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        # その他の例外は500 Internal Server Errorとして処理
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/friends/{friend_id}", response_model=FriendInDB)
 async def read_friend(friend_id: int, db: Session = Depends(get_db)):
@@ -42,3 +53,14 @@ async def update_friend(friend_id: int, friend: FriendUpdate, db: Session = Depe
 @router.delete("/friends/{friend_id}")
 async def delete_friend(friend_id: int, db: Session = Depends(get_db)):
     return await FriendController.delete_friend(friend_id, db)
+
+@router.post("/test-friends")
+async def test_create_friend(
+    friend: FriendCreate,
+    current_user_id: int = Depends(get_current_user_id)
+):
+    return {
+        "message": "認証成功",
+        "user_id": current_user_id,
+        "friend_name": friend.name
+    }

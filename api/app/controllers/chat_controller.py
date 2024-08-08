@@ -1,7 +1,7 @@
 import logging
 from fastapi import Depends
 from sqlalchemy.orm import Session
-from schemas.chat import ChatRequest, ChatResponse, Category1Response, Category2Response, Category3Response, InitialChatResponse
+from schemas.chat import ChatRequest, ChatResponse, Category1Response, Category2Response, Category3Response, Category4Response, InitialChatResponse
 from services.chat_service import ChatService
 from services.chat_processing_service import ChatProcessingService
 from database import get_db
@@ -67,6 +67,25 @@ class ChatController:
                 similarity_category=similarity_category,
                 final_answer=result.get("final_answer")
             )
+        # In ChatController
+        elif initial_response.question_category == 4:
+            result, confidence = await ChatProcessingService.process_category_4(
+                db,
+                user_id,
+                initial_response.who
+            )
+            response = Category4Response(
+                who=initial_response.who,
+                what=initial_response.what or "general description",
+                related_subject=initial_response.related_subject,
+                status=result.get("status", "Unknown"),
+                answer=result.get("answer"),
+                summary=result.get("summary", "Summary not available."),
+                missing_info=result.get("missing_info"),
+                approximation=result.get("approximation"),
+                similarity_category=confidence,
+                final_answer=result.get("final_answer")
+            )
         else:
             # 他のカテゴリーの処理（必要に応じて追加）
             response = None
@@ -78,4 +97,6 @@ class ChatController:
 
     @staticmethod
     async def process_test_chat(user_id: int, content: str, db: Session = Depends(get_db)) -> InitialChatResponse:
-        return await ChatService.process_chat(user_id, content, db)
+        initial_response = await ChatService.process_chat(user_id, content, db)
+        logger.debug(f"Initial ChatResponse: {initial_response}")
+        return initial_response

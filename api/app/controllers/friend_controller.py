@@ -61,8 +61,15 @@ class FriendController:
         return {"similar_attributes": similar_attributes}
 
     @staticmethod
-    def create_friend(friend: FriendCreate, db: Session = Depends(get_db)):
-        return friend_service.create_friend(db, friend)
+    def create_friend(friend: FriendCreate, db: Session, user_id: int):
+        try:
+            return friend_service.create_friend(db, friend, user_id)
+        except HTTPException as e:
+            # HTTPExceptionをそのまま再発生させる
+            raise e
+        except Exception as e:
+            # その他の例外は500 Internal Server Errorとして処理
+            raise HTTPException(status_code=500, detail=str(e))
 
     @staticmethod
     def get_friend(friend_id: int, db: Session = Depends(get_db)):

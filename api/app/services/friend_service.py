@@ -1,4 +1,5 @@
 from typing import List
+from fastapi import HTTPException
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 from sqlalchemy.orm import Session
@@ -77,8 +78,18 @@ async def find_similar_attributes(db: Session, query: str, threshold: float = 0.
     logger.debug(f"Found {len(similar_attributes)} similar attributes")
     return similar_attributes
 
-def create_friend(db: Session, friend: FriendCreate):
-    db_friend = Friend(**friend.dict())
+def create_friend(db: Session, friend: FriendCreate, user_id: int):
+    # 同じユーザーIDで同じ名前のフレンドが既に存在するかチェック
+    existing_friend = db.query(Friend).filter(
+        Friend.user_id == user_id,
+        Friend.name == friend.name
+    ).first()
+
+    if existing_friend:
+        raise HTTPException(status_code=400, detail="A friend with this name already exists for this user")
+
+    # 新しいフレンドを作成
+    db_friend = Friend(name=friend.name, user_id=user_id)
     db.add(db_friend)
     db.commit()
     db.refresh(db_friend)
