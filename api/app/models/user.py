@@ -10,6 +10,7 @@ class User(BaseModel):
     name = Column(String, index=True)
     email = Column(String, unique=True, index=True)
     firebase_uid = Column(String, unique=True, index=True)
+    hashed_password = Column(String(128))
     created_at = Column(DateTime, default=datetime.now(timezone.utc))
     updated_at = Column(DateTime, default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc))
 

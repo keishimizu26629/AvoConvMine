@@ -13,37 +13,61 @@ class ChatService:
         analysis = await ChatService.analyze_question(content)
 
         return InitialChatResponse(
-            who=analysis.get("person"),
+            who=analysis.get("primary_subject"),
             what=analysis.get("attribute"),
+            related_subject=analysis.get("related_subject"),
             question_category=ChatService.get_category_number(analysis.get("category"))
         )
-    
+
     @staticmethod
     async def analyze_question(question: str) -> Dict[str, Any]:
         prompt = f"""
-        Analyze the following question: {question}
+        Analyze the following question in English: {question}
 
         Return a JSON object in the following format:
         {{
             "category": "Question category (①, ②, ③, or ④)",
-            "person": "Name of the person if the question is about a specific person, otherwise null",
-            "attribute": "The exact phrase or words used in the question to describe the attribute or information being asked about, or 'general description' for category ④ questions",
-            "explanation": "Brief explanation of the classification"
+            "primary_subject": "The main person or group the question is about, or 'unknown' if not specified",
+            "related_subject": "Any related person or thing mentioned in the question, or null if none",
+            "attribute": "The specific attribute or information being asked about",
+            "relation": "The relationship between the primary_subject and related_subject, if applicable",
+            "explanation": "Brief explanation of the classification and analysis"
         }}
 
-        Category definitions:
-        ①: Questions asking to confirm a specific attribute of a specific person
-        ②: Questions asking about a specific attribute of a specific person
-        ③: Questions asking about a person with a specific attribute
+        Category definitions with examples:
+        ①: Questions asking to confirm or inquire about a specific attribute of a specific person or their relation
+        Pattern: "Is/Are/Does/Do [Person/Person's relation] [Attribute]?" or similar confirmatory or inquiry questions
+        Examples:
+        - Is John an engineer?
+        - Are Mary and Tom married?
+        - Does Karen have a child?
+
+        ②: Questions asking about a specific attribute of a specific person or their relation, typically starting with "What", "Where", "When", "How"
+        Pattern: "What/Where/When/How is/was [Person/Person's relation]'s [Attribute]?" or similar specific inquiries
+        Examples:
+        - What is David's occupation?
+        - Where does Emma live?
+        - How old is Michael's daughter?
+
+        ③: Questions asking about a person or people with a specific attribute
+        Pattern: "Who is/are/has [Attribute]?" or similar questions identifying people by attributes
+        Examples:
+        - Who is the tallest person in the group?
+        - Which employee has the most experience?
+        - Who are the new team members?
+        - Who has a daughter?
+        - Who lives in Tokyo?
+
         ④: Questions asking for a general description or overview of a specific person
+        Pattern: Open-ended questions about a person without specifying an attribute
+        Examples:
+        - Can you tell me about Lisa?
+        - What do you know about Dr. Johnson?
 
-        Examples of category ④ questions:
-        - Can you tell me about [Person]?
-        - What is [Person] like?
-        - How would you describe [Person]?
-        - Can you describe [Person]'s personality?
-
-        Note: For the "attribute" field, use the exact words or phrase from the question that describe what is being asked about, not a general category. For category ④, use 'general description'.
+        Important:
+        - Pay close attention to the structure and intent of the question.
+        - For category ③ questions, the primary_subject should be 'unknown' unless a specific group is mentioned.
+        - The attribute for category ③ questions should be the characteristic or possession being asked about.
 
         Note: Return only the JSON object without any additional explanation.
         """

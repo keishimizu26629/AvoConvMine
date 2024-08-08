@@ -8,6 +8,9 @@ class Environment(BaseSettings):
     """ 環境変数を読み込む
     """
     DATABASE_URL: str  # 小文字から大文字に変更
+    SECRET_KEY: str
+    ALGORITHM: str
+    ACCESS_TOKEN_EXPIRE_MINUTES: int
 
     class Config:
         env_file = os.path.join(PROJECT_ROOT, '.env')

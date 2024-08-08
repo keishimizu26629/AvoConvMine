@@ -36,7 +36,11 @@ class FriendController:
             await conversation_service.save_conversation_history(db, conversation)
 
             logger.debug("Attributes extracted and saved successfully")
-            return {"message": "Attributes extracted and saved successfully", "attributes": processed_attributes}
+            return {
+                "message": "Attributes extracted and saved successfully",
+                "attributes": processed_attributes,
+                "updated_count": len([attr for attr in processed_attributes if attr not in result["attributes"]])
+            }
         except KeyError as ke:
             logger.exception(f"KeyError occurred: {str(ke)}")
             raise HTTPException(status_code=500, detail=f"Missing key in result: {str(ke)}")
@@ -57,8 +61,15 @@ class FriendController:
         return {"similar_attributes": similar_attributes}
 
     @staticmethod
-    def create_friend(friend: FriendCreate, db: Session = Depends(get_db)):
-        return friend_service.create_friend(db, friend)
+    def create_friend(friend: FriendCreate, db: Session, user_id: int):
+        try:
+            return friend_service.create_friend(db, friend, user_id)
+        except HTTPException as e:
+            # HTTPExceptionをそのまま再発生させる
+            raise e
+        except Exception as e:
+            # その他の例外は500 Internal Server Errorとして処理
+            raise HTTPException(status_code=500, detail=str(e))
 
     @staticmethod
     def get_friend(friend_id: int, db: Session = Depends(get_db)):
