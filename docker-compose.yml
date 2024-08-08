@@ -25,5 +25,15 @@ services:
     ports:
       - 5432:5432
 
+  ffront:
+    build: ./front
+    ports:
+      - "3001:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:3000
+    volumes:
+      - ./front:/usr/src/app
+      - ./front/next.config.mjs:/usr/src/app/next.config.mjs
+
 volumes:
   postgres_data:
