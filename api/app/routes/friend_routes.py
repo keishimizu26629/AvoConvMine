@@ -43,8 +43,18 @@ async def read_friend(friend_id: int, db: Session = Depends(get_db)):
     return await FriendController.get_friend(friend_id, db)
 
 @router.get("/friends/", response_model=list[FriendInDB])
-async def read_friends(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    return await FriendController.get_friends(skip, limit, db)
+async def read_friends(
+    db: Session = Depends(get_db),
+    current_user_id: int = Depends(get_current_user_id)
+):
+    try:
+        return FriendController.get_friends(db, current_user_id)
+    except HTTPException as e:
+        # HTTPExceptionをそのまま再発生させる
+        raise e
+    except Exception as e:
+        # その他の例外は500 Internal Server Errorとして処理
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.put("/friends/{friend_id}", response_model=FriendInDB)
 async def update_friend(friend_id: int, friend: FriendUpdate, db: Session = Depends(get_db)):
