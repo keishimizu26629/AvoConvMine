@@ -2,38 +2,37 @@
 
 import React from 'react';
 import Link from 'next/link';
-import AuthForm from '../../components/AuthForm';
+import AuthForm from '@/components/AuthForm';
+import { LogIn, UserPlus } from 'lucide-react';
 
 const LoginPage: React.FC = () => {
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">Sign in to your account</h2>
-      </div>
-
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-          <AuthForm isLogin={true} />
-          <div className="mt-6">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300" />
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">Or</span>
-              </div>
-            </div>
-            <div className="mt-6 text-center">
-                <Link
-                  href={`/register`}
-                  className="font-medium text-indigo-600 hover:text-indigo-500"
-                >
-                  Create a new account
-                </Link>
-              </div>
+    <div className="min-h-screen bg-gray-100 flex flex-col">
+      <main className="flex-grow flex flex-col justify-center p-4">
+        <div className="max-w-md w-full mx-auto">
+          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900 mb-8">
+            Sign in to your account
+          </h2>
+          <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+            <AuthForm isLogin={true} />
           </div>
         </div>
-      </div>
+      </main>
+
+      <nav className="bg-white shadow-lg">
+        <div className="max-w-screen-xl mx-auto px-4">
+          <div className="flex justify-between">
+            <Link href="/login" className="flex items-center py-4 px-2">
+              <LogIn className="h-6 w-6 text-indigo-600 mr-2" />
+              <span className="font-semibold text-gray-500 text-lg">Login</span>
+            </Link>
+            <Link href="/register" className="flex items-center py-4 px-2">
+              <UserPlus className="h-6 w-6 text-gray-500 mr-2" />
+              <span className="font-semibold text-gray-500 text-lg">Register</span>
+            </Link>
+          </div>
+        </div>
+      </nav>
     </div>
   );
 };

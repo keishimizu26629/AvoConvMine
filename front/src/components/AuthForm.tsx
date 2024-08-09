@@ -2,26 +2,54 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { login, register } from '@/services/authService';
 
 interface AuthFormProps {
-  isLogin?: boolean;
+  isLogin: boolean;
 }
 
-const AuthForm: React.FC<AuthFormProps> = ({ isLogin = true }) => {
+const AuthForm: React.FC<AuthFormProps> = ({ isLogin }) => {
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // ここに認証ロジックを実装
-    console.log(isLogin ? 'Logging in...' : 'Registering...', { email, password });
-    // 成功後のリダイレクト
-    router.push('/dashboard');
+    setError('');
+
+    try {
+      if (isLogin) {
+        await login({ email, password });
+      } else {
+        await register({ name, email, password });
+      }
+      router.push('/home');
+    } catch (err) {
+      console.error('Authentication error:', err);
+      setError(`Authentication failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    }
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {!isLogin && (
+        <div>
+          <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+            Username
+          </label>
+          <input
+            id="name"
+            name="name"
+            type="text"
+            required
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-black"
+          />
+        </div>
+      )}
       <div>
         <label htmlFor="email" className="block text-sm font-medium text-gray-700">
           Email address
@@ -30,11 +58,10 @@ const AuthForm: React.FC<AuthFormProps> = ({ isLogin = true }) => {
           id="email"
           name="email"
           type="email"
-          autoComplete="email"
           required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-black"
         />
       </div>
       <div>
@@ -45,13 +72,13 @@ const AuthForm: React.FC<AuthFormProps> = ({ isLogin = true }) => {
           id="password"
           name="password"
           type="password"
-          autoComplete="current-password"
           required
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-black"
         />
       </div>
+      {error && <p className="text-red-500 text-sm">{error}</p>}
       <div>
         <button
           type="submit"
