@@ -101,6 +101,9 @@ def get_friend(db: Session, friend_id: int):
 def get_friends(db: Session, skip: int = 0, limit: int = 100):
     return db.query(Friend).offset(skip).limit(limit).all()
 
+def get_friends_by_user_id(db: Session, user_id: int, skip: int = 0, limit: int = 500):
+    return db.query(Friend).filter(Friend.user_id == user_id).offset(skip).limit(limit).all()
+
 def update_friend(db: Session, friend_id: int, friend: FriendUpdate):
     db_friend = db.query(Friend).filter(Friend.id == friend_id).first()
     if db_friend:

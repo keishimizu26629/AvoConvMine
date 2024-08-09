@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter
 from schemas.conversation import ConversationInput
 from services.conversation_service import extract_attributes_service
 

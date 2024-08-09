@@ -79,8 +79,8 @@ class FriendController:
         return db_friend
 
     @staticmethod
-    def get_friends(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-        return friend_service.get_friends(db, skip=skip, limit=limit)
+    def get_friends(db: Session, user_id: int):
+        return friend_service.get_friends_by_user_id(db, user_id)
 
     @staticmethod
     def update_friend(friend_id: int, friend: FriendUpdate, db: Session = Depends(get_db)):
