@@ -41,10 +41,17 @@ class ChatProcessingService:
             Question: {question}
             Result: {json.dumps(result, indent=2)}
 
-            Provide a concise response that directly answers the question.
-            If the status is "Found", include only the specific information from the 'answer' field in your response.
-            If the status is "Not Found", state that the information is not available or couldn't be determined.
-            The response should be purely factual without any subjective interpretations.
+            Please follow these guidelines to create an appropriate response:
+
+            1. Carefully consider the specific attribute being asked about in the question.
+            2. Check if the information in the 'answer' and 'approximation' fields directly relates to the asked attribute.
+            3. If the information doesn't directly answer the question but is related, explain the relationship.
+            4. If the exact information isn't available, clearly state this and provide any related information if available.
+            5. The response should be concise but complete, addressing the question directly.
+            6. Avoid making assumptions or adding information not present in the given data.
+            7. If the information is uncertain or approximate, reflect this in your answer.
+
+            Provide a natural language response that accurately reflects the available information and directly addresses the question.
             """
         elif category == 3:
             prompt = f"""
@@ -77,7 +84,13 @@ class ChatProcessingService:
         return clean_json_response(gemini_response.text)
 
     @staticmethod
-    async def process_category_1(db: Session, user_id: int, who: str, what: str, related_subject: Optional[str] = None) -> Tuple[Dict[str, Any], str]:
+    async def process_category_1(
+        db: Session,
+        user_id: int,
+        who: str,
+        what: str,
+        related_subject: Optional[str] = None
+    ) -> Tuple[Dict[str, Any], str]:
         logger.debug(f"Processing category 1 for user_id: {user_id}, who: {who}, what: {what}, related_subject: {related_subject}")
 
         friend = find_friend(db, who)
@@ -181,7 +194,14 @@ class ChatProcessingService:
         return result, confidence
 
     @staticmethod
-    async def process_category_2(db: Session, user_id: int, who: str, what: str, related_subject: Optional[str] = None) -> Tuple[Dict[str, Any], str]:
+    async def process_category_2(
+        db: Session,
+        user_id: int,
+        who: str,
+        what: str,
+        related_subject: Optional[str] = None,
+        content: str = ""
+    ) -> Tuple[Dict[str, Any], str]:
         logger.debug(f"Processing category 2 for user_id: {user_id}, who: {who}, what: {what}, related_subject: {related_subject}")
 
         friend = find_friend(db, who)
@@ -244,7 +264,7 @@ class ChatProcessingService:
             result = {"status": "Not Found", "answer": None, "approximation": "No matching attribute found"}
             confidence = "low"
 
-        final_answer = await ChatProcessingService.generate_final_answer(f"What is {who}'s {what}?", result, 2)
+        final_answer = await ChatProcessingService.generate_final_answer(content, result, 2)
         result["final_answer"] = final_answer
 
         return result, confidence
