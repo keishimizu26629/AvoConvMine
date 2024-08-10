@@ -42,12 +42,13 @@ class ChatService:
         - Are Mary and Tom married?
         - Does Karen have a child?
 
-        ②: Questions asking about a specific attribute of a specific person or their relation, typically starting with "What", "Where", "When", "How"
-        Pattern: "What/Where/When/How is/was [Person/Person's relation]'s [Attribute]?" or similar specific inquiries
+        ②: Questions asking about a specific attribute of a specific person or their relation, typically starting with "What", "Where", "When", "How", or phrases like "tell me about"
+        Pattern: "What/Where/When/How is/was [Person/Person's relation]'s [Attribute]?" or "Tell me about [Person's] [Attribute]" or similar specific inquiries
         Examples:
         - What is David's occupation?
         - Where does Emma live?
         - How old is Michael's daughter?
+        - Tell me about Karen's occupation
 
         ③: Questions asking about a person or people with a specific attribute
         Pattern: "Who is/are/has [Attribute]?" or similar questions identifying people by attributes
@@ -66,6 +67,7 @@ class ChatService:
 
         Important:
         - Pay close attention to the structure and intent of the question.
+        - For category ② questions, ensure that both the person (primary_subject) and the attribute are correctly identified, even if the question is phrased as "Tell me about [Person's] [Attribute]".
         - For category ③ questions, the primary_subject should be 'unknown' unless a specific group is mentioned.
         - The attribute for category ③ questions should be the characteristic or possession being asked about.
 

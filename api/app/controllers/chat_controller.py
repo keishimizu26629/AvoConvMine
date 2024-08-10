@@ -40,7 +40,8 @@ class ChatController:
                 user_id,
                 initial_response.who,
                 initial_response.what,
-                initial_response.related_subject
+                initial_response.related_subject,
+                content
             )
             response = Category2Response(
                 who=initial_response.who,
