@@ -2,11 +2,11 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Cookies from 'js-cookie';
 import Link from 'next/link';
-import { Home, MessageCircle, User } from 'lucide-react';
+import { Home, MessageCircle, User, Plus } from 'lucide-react';
 import { Friend } from '@/interfaces/friend';
 import { getFriends } from '@/services/friendService';
+import Cookies from 'js-cookie';
 
 const HomePage: React.FC = () => {
   const router = useRouter();
@@ -62,6 +62,10 @@ const HomePage: React.FC = () => {
           ))}
         </ul>
       </main>
+
+      <Link href="/create-friend" className="fixed bottom-20 right-4 bg-blue-500 text-white rounded-full p-4 shadow-lg">
+        <Plus size={24} />
+      </Link>
 
       <nav className="fixed bottom-0 left-0 right-0 bg-white shadow-lg">
         <div className="flex justify-around items-center h-16">
