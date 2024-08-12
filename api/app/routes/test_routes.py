@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from utils.jwt import get_current_user_id
 
 router = APIRouter()

@@ -1,4 +1,4 @@
-import { Friend } from '@/interfaces/friend';
+import { Friend, FriendDetails } from '@/interfaces/friend';
 
 const API_URL = 'http://localhost:8000';
 
@@ -20,4 +20,42 @@ export const getFriends = async (token: string): Promise<Friend[]> => {
   }
 
   return response.json();
+};
+
+// 既存の関数はそのままで、以下を追加
+
+export const getFriendDetails = async (token: string, friendId: number): Promise<FriendDetails> => {
+  const response = await fetch(`${API_URL}/friend/details`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ friend_id: friendId }),
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch friend details');
+  }
+
+  return response.json();
+};
+
+export const addConversation = async (token: string, friendId: number, context: string, conversationDate: string): Promise<void> => {
+  const response = await fetch(`${API_URL}/friends/extract_attributes`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify({
+      friend_id: friendId,
+      context: context,
+      conversation_date: conversationDate
+    })
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to create conversation');
+  }
 };

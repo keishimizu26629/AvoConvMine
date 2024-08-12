@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional, Any, Union, Dict, List
 
 class ChatRequest(BaseModel):
@@ -15,13 +15,17 @@ class Category1Response(BaseModel):
     similarity_category: str
     final_answer: Optional[str]
 
+class Approximation(BaseModel):
+    attribute: Optional[str] = None
+    value: Optional[str] = None
+
 class Category2Response(BaseModel):
     who: Optional[str]
     what: str
     related_subject: Optional[str]
     status: str
     answer: Optional[str]
-    approximation: Optional[Any]
+    approximation: Union[Approximation, str, None] = Field(default=None)
     similarity_category: str
     final_answer: Optional[str]
 
