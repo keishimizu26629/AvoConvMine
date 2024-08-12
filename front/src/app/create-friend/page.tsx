@@ -51,7 +51,7 @@ const CreateFriendPage: React.FC = () => {
         <h1 className="text-2xl font-bold mb-4">Create New Friend</h1>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700">Friend's Name</label>
+          <label htmlFor="name" className="block text-sm font-medium text-gray-700">Friend&apos;s Name</label>
             <input
               type="text"
               id="name"
