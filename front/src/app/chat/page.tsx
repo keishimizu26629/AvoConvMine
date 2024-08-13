@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Home, MessageCircle, User } from 'lucide-react';
@@ -14,28 +14,35 @@ const ChatPage: React.FC = () => {
   const [inputMessage, setInputMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }
+
+  const fetchChats = async () => {
+    const token = Cookies.get('auth_token');
+    if (!token) {
+      router.push('/login');
+      return;
+    }
+    try {
+      const response = await getChats(token);
+      setMessages(response); // データの順序を維持
+    } catch (error) {
+      console.error('Failed to fetch chats:', error);
+    } finally {
+      setInitialLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchChats = async () => {
-      const token = Cookies.get('auth_token');
-      console.log(token)
-      if (!token) {
-        router.push('/login');
-        return;
-      }
-      try {
-        const response = await getChats(token);
-        console.log('Received chat data:', JSON.stringify(response, null, 2));
-        setMessages(response);
-      } catch (error) {
-        console.error('Failed to fetch chats:', error);
-      } finally {
-        setInitialLoading(false);
-      }
-    };
-
     fetchChats();
   }, [router]);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
   const handleSendMessage = async () => {
     if (!inputMessage.trim()) return;
@@ -49,14 +56,20 @@ const ChatPage: React.FC = () => {
     setLoading(true);
     try {
       const messageToSend: ChatMessageSend = { content: inputMessage };
-      const newMessage = await sendMessage(messageToSend, token);
-      setMessages(prev => [...prev, newMessage]);
+      await sendMessage(messageToSend, token);
       setInputMessage('');
+      // メッセージ送信後、チャットを再取得する
+      await fetchChats();
     } catch (error) {
       console.error('Failed to send message:', error);
     } finally {
       setLoading(false);
     }
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleString();
   };
 
   if (initialLoading) {
@@ -73,14 +86,14 @@ const ChatPage: React.FC = () => {
                 <div className="flex justify-end">
                   <div className="max-w-xs lg:max-w-md px-4 py-2 bg-blue-500 text-white rounded-lg">
                     {message.content}
-                    <div className="text-xs text-gray-300 mt-1">{new Date(message.created_at).toLocaleString()}</div>
+                    <div className="text-xs text-gray-300 mt-1">{formatDate(message.created_at)}</div>
                   </div>
                 </div>
                 {message.response && message.response.final_answer && (
                   <div className="flex justify-start">
                     <div className="max-w-xs lg:max-w-md px-4 py-2 bg-white rounded-lg text-black">
                       {message.response.final_answer}
-                      <div className="text-xs text-gray-500 mt-1">{new Date(message.response.created_at).toLocaleString()}</div>
+                      <div className="text-xs text-gray-500 mt-1">{formatDate(message.response.created_at)}</div>
                     </div>
                   </div>
                 )}
@@ -89,6 +102,7 @@ const ChatPage: React.FC = () => {
           ) : (
             <div className="text-center text-gray-500">No messages yet.</div>
           )}
+          <div ref={messagesEndRef} />
         </div>
       </main>
 
