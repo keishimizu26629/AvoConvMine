@@ -1,9 +1,12 @@
 import json
 import logging
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from schemas.chat import InitialChatResponse
 from utils.gemini_api import generate_gemini_response
 from utils.text_processing import clean_json_response
+from sqlalchemy.orm import Session
+from models.chat_history import ChatRequest, ChatResponse
+from schemas.chat import ChatRequestSummary, ChatResponseSummary
 
 logger = logging.getLogger(__name__)
 
@@ -95,3 +98,35 @@ class ChatService:
             return 4
         else:
             return 0  # Unknown category
+
+    @staticmethod
+    def get_user_chats_service(db: Session, user_id: int) -> List[ChatRequestSummary]:
+        logger.debug(f"Fetching chat requests for user_id: {user_id}")
+
+        chat_requests = db.query(ChatRequest).filter(ChatRequest.user_id == user_id).all()
+        chat_requests_summaries = []
+
+        for chat_request in chat_requests:
+            logger.debug(f"Processing chat_request_id: {chat_request.id}")
+
+            response = db.query(ChatResponse).filter(ChatResponse.request_id == chat_request.id).first()
+
+            if response:
+                logger.debug(f"Found response for chat_request_id: {chat_request.id}")
+                response_summary = ChatResponseSummary(
+                    final_answer=response.final_answer,
+                    created_at=response.created_at
+                )
+            else:
+                logger.debug(f"No response found for chat_request_id: {chat_request.id}")
+                response_summary = None
+
+            chat_request_summary = ChatRequestSummary(
+                content=chat_request.content,
+                created_at=chat_request.created_at,
+                response=response_summary
+            )
+
+            chat_requests_summaries.append(chat_request_summary)
+
+        return chat_requests_summaries

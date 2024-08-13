@@ -1,8 +1,8 @@
 from pydantic import BaseModel, Field
 from typing import Optional, Any, Dict, List
+from datetime import datetime
 
 class ChatRequest(BaseModel):
-    user_id: int
     content: str
 
 class Category1Response(BaseModel):
@@ -60,3 +60,12 @@ class InitialChatResponse(BaseModel):
     what: Optional[str] = None
     related_subject: Optional[str] = None
     question_category: int
+
+class ChatResponseSummary(BaseModel):
+    final_answer: Optional[str]
+    created_at: datetime
+
+class ChatRequestSummary(BaseModel):
+    content: str
+    created_at: datetime
+    response: Optional[ChatResponseSummary]
