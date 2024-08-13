@@ -57,7 +57,7 @@ const AddConversationPage: React.FC = () => {
               id="context"
               value={context}
               onChange={(e) => setContext(e.target.value)}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-black"
               rows={4}
               required
             />
@@ -69,7 +69,7 @@ const AddConversationPage: React.FC = () => {
               id="conversationDate"
               value={conversationDate}
               onChange={(e) => setConversationDate(e.target.value)}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-black"
               required
             />
           </div>
