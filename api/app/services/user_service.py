@@ -1,4 +1,3 @@
-from typing import Union
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
 from models.user import User
@@ -28,7 +27,7 @@ class UserService:
         return db.query(User).filter(User.email == email).first()
 
     @staticmethod
-    def authenticate_user(db: Session, email: str, password: str) -> Union[User, None]:
+    def authenticate_user(db: Session, email: str, password: str) -> User | None:
         user = UserService.get_user_by_email(db, email)
         if not user or not verify_password(password, user.hashed_password):
             return None

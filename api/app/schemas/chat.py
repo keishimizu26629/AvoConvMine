@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Optional, Any, Union, Dict, List
+from typing import Optional, Any, Dict, List
 
 class ChatRequest(BaseModel):
     user_id: int
@@ -10,7 +10,7 @@ class Category1Response(BaseModel):
     what: str
     related_subject: Optional[str]
     status: str
-    answer: Union[str, Dict[str, Any], None]
+    answer: str | dict[str, Any] | None
     approximation: Optional[Any]
     similarity_category: str
     final_answer: Optional[str]
@@ -25,7 +25,7 @@ class Category2Response(BaseModel):
     related_subject: Optional[str]
     status: str
     answer: Optional[str]
-    approximation: Union[Approximation, str, None] = Field(default=None)
+    approximation: Approximation | str | None = Field(default=None)
     similarity_category: str
     final_answer: Optional[str]
 
@@ -53,7 +53,7 @@ class Category4Response(BaseModel):
 
 class ChatResponse(BaseModel):
     question_category: int
-    response: Union[Category1Response, Category2Response, Category3Response, Category4Response]
+    response: Category1Response | Category2Response | Category3Response | Category4Response
 
 class InitialChatResponse(BaseModel):
     who: Optional[str] = None
