@@ -51,7 +51,7 @@ const HomePage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
       <main className="flex-grow p-4 mb-16">
-        <h1 className="text-2xl font-bold mb-4">Friend List</h1>
+        <h1 className="text-2xl font-bold mb-4 text-indigo-400">Friend List</h1>
         <ul className="space-y-2">
           {friends.map((friend) => (
             <li key={friend.id} className="bg-white p-4 rounded shadow">

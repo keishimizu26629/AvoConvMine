@@ -54,7 +54,7 @@ const FriendDetailsPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
       <main className="flex-grow p-4 mb-16">
-        <h1 className="text-2xl font-bold mb-4">{friendDetails?.friend_name}</h1>
+        <h1 className="text-2xl font-bold mb-4 text-indigo-400">{friendDetails?.friend_name}</h1>
         <div className="bg-white shadow overflow-hidden sm:rounded-lg mb-6">
           <div className="px-4 py-5 sm:px-6">
             <h3 className="text-lg leading-6 font-medium text-gray-900">Friend Details</h3>
