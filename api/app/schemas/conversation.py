@@ -1,6 +1,7 @@
 from pydantic import BaseModel
+from datetime import datetime
 
 class ConversationInput(BaseModel):
-    user_id: int
     friend_id: int
     context: str
+    conversation_date: datetime

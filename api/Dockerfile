@@ -1,4 +1,4 @@
-FROM python:3.9-slim
+FROM python:3.12.4-slim
 
 ENV LANG C.UTF-8
 ENV TZ Asia/Tokyo
@@ -22,4 +22,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY ./app /app
 
 # FastAPIの起動
-CMD ["uvicorn", "main:app", "--reload", "--host", "0.0.0.0", "--port", "8000"]
+CMD uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}

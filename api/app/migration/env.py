@@ -20,14 +20,27 @@ config = context.config
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
-fileConfig(config.config_file_name)
+if config.config_file_name is not None:
+    fileConfig(config.config_file_name)
 
 # add your model's MetaData object here
 # for 'autogenerate' support
 target_metadata = metadata
 
 # その他の設定
-config.set_main_option('sqlalchemy.url', get_env().DATABASE_URL)
+# URLエンコーディングを使用してデータベースURLを設定
+from urllib.parse import quote_plus
+database_url = get_env().DATABASE_URL
+parsed_url = database_url.split('://')
+if len(parsed_url) == 2:
+    scheme, rest = parsed_url
+    user_pass, host_db = rest.split('@')
+    user, password = user_pass.split(':')
+    encoded_password = quote_plus(password)
+    encoded_url = f"{scheme}://{user}:{encoded_password}@{host_db}"
+    config.set_main_option('sqlalchemy.url', encoded_url)
+else:
+    config.set_main_option('sqlalchemy.url', database_url)
 
 def run_migrations_offline():
     """Run migrations in 'offline' mode."""
