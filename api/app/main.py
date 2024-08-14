@@ -7,7 +7,8 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3001"],  # フロントエンドのベース URL
+    # allow_origins=["http://localhost:3001"],  # フロントエンドのベース URL
+    allow_origins=["https://avo-conv-mine.vercel.app"],  # フロントエンドのベース URL
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
