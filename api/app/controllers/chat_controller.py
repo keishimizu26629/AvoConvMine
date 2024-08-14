@@ -1,12 +1,13 @@
 import logging
-from fastapi import Depends
+from fastapi import Depends, HTTPException
 from sqlalchemy.orm import Session
-from schemas.chat import ChatRequest, ChatResponse, Category1Response, Category2Response, Category3Response, Category4Response, InitialChatResponse, Approximation
+from schemas.chat import ChatRequest, ChatResponse, Category1Response, Category2Response, Category3Response, Category4Response, InitialChatResponse, Approximation, ChatRequestSummary
 from services.chat_service import ChatService
 from services.chat_processing_service import ChatProcessingService
 from services.chat_request_service import ChatRequestService
 from services.chat_response_service import ChatResponseService
 from database import get_db
+from typing import List
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -119,3 +120,10 @@ class ChatController:
         initial_response = await ChatService.process_chat(user_id, content, db)
         logger.debug(f"Initial ChatResponse: {initial_response}")
         return initial_response
+
+    @staticmethod
+    def get_user_chats(db: Session, user_id: int) -> List[ChatRequestSummary]:
+        try:
+            return ChatService.get_user_chats_service(db, user_id)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))

@@ -45,11 +45,11 @@ async def extract_attributes_service(conversation: ConversationInput):
         logger.exception(f"Error in extract_attributes_service: {str(e)}")
         return {"error": str(e), "raw_response": response.text if 'response' in locals() else None}
 
-async def save_conversation_history(db: Session, conversation: ConversationInput):
+async def save_conversation_history(db: Session, user_id: int, conversation: ConversationInput):
     new_history = ConversationHistory(
-        user_id=conversation.user_id,
+        user_id=user_id,
         friend_id=conversation.friend_id,
-        conversation_date=datetime.now(timezone.utc),
+        conversation_date=conversation.conversation_date,
         context=conversation.context
     )
     db.add(new_history)

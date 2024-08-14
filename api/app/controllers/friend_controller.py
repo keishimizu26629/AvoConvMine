@@ -2,7 +2,7 @@ from fastapi import Depends, HTTPException
 from sqlalchemy.orm import Session
 from models.friend import Friend
 from schemas.conversation import ConversationInput
-from schemas.friend import FriendCreate, FriendUpdate, FriendInDB
+from schemas.friend import FriendCreate, FriendUpdate, FriendInDB, FriendDetailRequest, FriendDetailResponse
 from schemas.attribute import AttributeSchema
 from services import conversation_service, attribute_service, friend_service
 from database import get_db
@@ -13,8 +13,8 @@ logger = logging.getLogger(__name__)
 
 class FriendController:
     @staticmethod
-    async def extract_and_save_attributes(conversation: ConversationInput, db: Session = Depends(get_db)):
-        logger.debug(f"Starting extract_and_save_attributes for user_id: {conversation.user_id}, friend_id: {conversation.friend_id}")
+    async def extract_and_save_attributes(user_id: int, conversation: ConversationInput, db: Session = Depends(get_db)):
+        logger.debug(f"Starting extract_and_save_attributes for user_id: {user_id}, friend_id: {conversation.friend_id}")
         try:
             # Extract attributes from conversation
             logger.debug("Extracting attributes from conversation")
@@ -30,10 +30,10 @@ class FriendController:
 
             # Process attributes and save them
             logger.debug("Processing and saving attributes")
-            processed_attributes = await attribute_service.process_attributes(db, conversation.user_id, conversation.friend_id, result["attributes"])
+            processed_attributes = await attribute_service.process_attributes(db, user_id, conversation.friend_id, result["attributes"])
 
             # Save conversation history
-            await conversation_service.save_conversation_history(db, conversation)
+            await conversation_service.save_conversation_history(db, user_id, conversation)
 
             logger.debug("Attributes extracted and saved successfully")
             return {
@@ -88,3 +88,12 @@ class FriendController:
         if db_friend is None:
             raise HTTPException(status_code=404, detail="Friend not found")
         return db_friend
+
+    @staticmethod
+    def get_friend_details_with_history(db: Session, user_id: int, request: FriendDetailRequest) -> FriendDetailResponse:
+        try:
+            return friend_service.get_friend_details_with_history(db, user_id, request.friend_id)
+        except HTTPException as e:
+            raise e
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))

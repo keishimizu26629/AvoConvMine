@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Body, HTTPException, Request
 from sqlalchemy.orm import Session
 from controllers.friend_controller import FriendController
-from schemas.friend import FriendCreate, FriendUpdate, FriendInDB
+from schemas.friend import FriendCreate, FriendUpdate, FriendInDB, FriendDetailRequest, FriendDetailResponse
 from schemas.conversation import ConversationInput
 from schemas.attribute import AttributeSchema
 from utils.jwt import get_current_user_id
@@ -12,8 +12,12 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 @router.post("/friends/extract_attributes")
-async def extract_attributes(conversation: ConversationInput = Body(...), db: Session = Depends(get_db)):
-    return await FriendController.extract_and_save_attributes(conversation, db)
+async def extract_attributes(
+    conversation: ConversationInput = Body(...),
+    db: Session = Depends(get_db),
+    current_user_id: int = Depends(get_current_user_id)
+):
+    return await FriendController.extract_and_save_attributes(current_user_id, conversation, db)
 
 @router.get("/attributes", response_model=list[AttributeSchema])
 async def get_all_attributes(db: Session = Depends(get_db)):
@@ -63,6 +67,19 @@ async def update_friend(friend_id: int, friend: FriendUpdate, db: Session = Depe
 @router.delete("/friends/{friend_id}")
 async def delete_friend(friend_id: int, db: Session = Depends(get_db)):
     return await FriendController.delete_friend(friend_id, db)
+
+@router.post("/friend/details", response_model=FriendDetailResponse)
+async def get_friend_details_with_history(
+    request: FriendDetailRequest,
+    db: Session = Depends(get_db),
+    current_user_id: int = Depends(get_current_user_id)
+):
+    try:
+        return FriendController.get_friend_details_with_history(db, current_user_id, request)
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/test-friends")
 async def test_create_friend(

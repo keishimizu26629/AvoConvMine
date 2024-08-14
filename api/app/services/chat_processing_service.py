@@ -93,12 +93,14 @@ class ChatProcessingService:
     ) -> Tuple[Dict[str, Any], str]:
         logger.debug(f"Processing category 1 for user_id: {user_id}, who: {who}, what: {what}, related_subject: {related_subject}")
 
-        friend = find_friend(db, who)
+        friend = find_friend(db, who, user_id)
+        logger.debug(f"Found friend: {friend.name if friend else 'None'} with id: {friend.id if friend else 'None'}")
         if not friend:
             logger.debug("Friend not found, returning 'No' with low confidence")
             return {"status": "No", "answer": None, "approximation": "Friend not found"}, "low"
 
         all_attributes = get_all_friend_attributes(db, friend.id, user_id)
+        logger.debug(f"Retrieved attributes: {[attr.name for attr in all_attributes]}")
         if not all_attributes:
             logger.debug(f"No attributes found for friend {friend.name}")
             return {"status": "No", "answer": None, "approximation": "No attributes found"}, "low"
@@ -204,7 +206,7 @@ class ChatProcessingService:
     ) -> Tuple[Dict[str, Any], str]:
         logger.debug(f"Processing category 2 for user_id: {user_id}, who: {who}, what: {what}, related_subject: {related_subject}")
 
-        friend = find_friend(db, who)
+        friend = find_friend(db, who, user_id)
         if not friend:
             logger.debug("Friend not found, returning 'Not Found' with low confidence")
             return {"status": "Not Found", "answer": None, "approximation": "Friend not found"}, "low"
@@ -265,7 +267,12 @@ class ChatProcessingService:
             confidence = "low"
 
         final_answer = await ChatProcessingService.generate_final_answer(content, result, 2)
+        if not final_answer:
+            final_answer = f"I'm sorry, but I couldn't find any information about {result.get('who', 'the person')}'s {result.get('what', 'attribute')}."
         result["final_answer"] = final_answer
+
+        logger.debug(f"Final result for category 2: {result}")
+        logger.debug(f"Confidence: {confidence}")
 
         return result, confidence
 
@@ -374,7 +381,7 @@ class ChatProcessingService:
     @staticmethod
     async def process_category_4(db: Session, user_id: int, who: str) -> Tuple[Dict[str, Any], str]:
         logger.debug(f"Processing category 4 for user_id: {user_id}, who: {who}")
-        friend = find_friend(db, who)
+        friend = find_friend(db, who, user_id)
         if not friend:
             logger.debug(f"Friend {who} not found")
             return {
@@ -408,6 +415,8 @@ class ChatProcessingService:
                     current[key] = {}
                 current = current[key]
             current[keys[-1]] = attr.value
+
+        logger.debug(f"aggregated_info: {aggregated_info}")
 
         # Gemini APIを使用して要約と説明を生成
         prompt = f"""
@@ -461,5 +470,7 @@ class ChatProcessingService:
             "approximation": None,
             "final_answer": gemini_result["final_answer"]
         }
+
+        logger.debug(f"process_category_4 result: {result}")
 
         return result, "high"

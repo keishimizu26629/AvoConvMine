@@ -1,8 +1,11 @@
+import logging
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 from sqlalchemy import and_
 from models.friend import Friend, Attribute, FriendAttribute
 from utils.embedding import generate_embedding, cosine_similarity_single
+
+logger = logging.getLogger(__name__)
 
 def find_attribute(db: Session, what: str):
     all_attributes = db.query(Attribute).all()
@@ -20,18 +23,35 @@ def find_attribute(db: Session, what: str):
 
     return best_attribute, best_similarity
 
-def find_friend(db: Session, who: str):
-    friend = db.query(Friend).filter(func.lower(Friend.name) == who.lower()).first()
-    if not friend:
-        name_attribute = db.query(Attribute).filter(Attribute.id == 29).first()
-        if name_attribute:
-            friend_with_name = db.query(FriendAttribute).filter(
-                FriendAttribute.attribute_id == name_attribute.id,
-                func.lower(FriendAttribute.value).like(f"%{who.lower()}%")
-            ).first()
-            if friend_with_name:
-                friend = db.query(Friend).filter(Friend.id == friend_with_name.friend_id).first()
-    return friend
+def find_friend(db: Session, who: str, user_id: int):
+    logger.debug(f"Searching for friend: {who} for user_id: {user_id}")
+
+    friend = db.query(Friend).filter(
+        func.lower(Friend.name) == who.lower(),
+        Friend.user_id == user_id
+    ).first()
+
+    if friend:
+        logger.debug(f"Found friend by name: {friend.name} (id: {friend.id}) for user_id: {user_id}")
+        return friend
+
+    # Friend.name で見つからなかった場合、Attribute経由で検索
+    logger.debug(f"Friend not found by name for user_id: {user_id}, searching through attributes")
+    name_attribute = db.query(Attribute).filter(Attribute.id == 29).first()
+    if name_attribute:
+        friend_with_name = db.query(FriendAttribute).filter(
+            FriendAttribute.attribute_id == name_attribute.id,
+            func.lower(FriendAttribute.value).like(f"%{who.lower()}%"),
+            FriendAttribute.user_id == user_id
+        ).first()
+        if friend_with_name:
+            friend = db.query(Friend).filter(Friend.id == friend_with_name.friend_id, Friend.user_id == user_id).first()
+            if friend:
+                logger.debug(f"Found friend through attributes: {friend.name} (id: {friend.id}) for user_id: {user_id}")
+                return friend
+
+    logger.debug(f"Friend not found: {who} for user_id: {user_id}")
+    return None
 
 def get_friend_attribute(db: Session, friend_id: int, attribute_id: int, user_id: int):
     return db.query(FriendAttribute).filter(
@@ -41,14 +61,7 @@ def get_friend_attribute(db: Session, friend_id: int, attribute_id: int, user_id
     ).first()
 
 def get_all_friend_attributes(db: Session, friend_id: int, user_id: int):
-    """
-    指定された友人の全ての属性を取得します。
-
-    :param db: データベースセッション
-    :param friend_id: 友人のID
-    :param user_id: ユーザーID
-    :return: 属性のリスト
-    """
+    logger.debug(f"Getting attributes for friend_id: {friend_id}, user_id: {user_id}")
     attributes = (
         db.query(FriendAttribute, Attribute.name)
         .join(Attribute, FriendAttribute.attribute_id == Attribute.id)
@@ -61,10 +74,13 @@ def get_all_friend_attributes(db: Session, friend_id: int, user_id: int):
         .all()
     )
 
-    return [
+    result = [
         AttributeInfo(name=attr_name, value=friend_attr.value)
         for friend_attr, attr_name in attributes
     ]
+
+    logger.debug(f"Retrieved {len(result)} attributes for friend_id: {friend_id}")
+    return result
 
 class AttributeInfo:
     def __init__(self, name: str, value: str):

@@ -6,7 +6,9 @@ from sqlalchemy.orm import Session
 from utils.embedding import generate_embedding
 from sqlalchemy.orm import Session
 from models.friend import Friend, FriendAttribute, Attribute
-from schemas.friend import FriendCreate, FriendUpdate
+from models.conversation_history import ConversationHistory
+from schemas.friend import FriendCreate, FriendUpdate, FriendDetailResponse, FriendAttributeResponse, ConversationHistoryItem
+
 import logging
 import json
 from utils.embedding import generate_embedding, cosine_similarity
@@ -119,3 +121,30 @@ def delete_friend(db: Session, friend_id: int):
         db.delete(db_friend)
         db.commit()
     return db_friend
+
+def get_friend_details_with_history(db: Session, user_id: int, friend_id: int) -> FriendDetailResponse:
+    friend = db.query(Friend).filter(Friend.id == friend_id, Friend.user_id == user_id).first()
+    if not friend:
+        raise HTTPException(status_code=404, detail="Friend not found")
+
+    attributes = db.query(Attribute.name, FriendAttribute.value)\
+        .join(FriendAttribute, Attribute.id == FriendAttribute.attribute_id)\
+        .filter(FriendAttribute.friend_id == friend_id, FriendAttribute.user_id == user_id)\
+        .all()
+
+    conversations = db.query(ConversationHistory.context, ConversationHistory.conversation_date)\
+        .filter(ConversationHistory.user_id == user_id, ConversationHistory.friend_id == friend_id)\
+        .order_by(ConversationHistory.conversation_date.desc())\
+        .all()
+
+    return FriendDetailResponse(
+        friend_name=friend.name,
+        attributes=[
+            FriendAttributeResponse(attribute_name=name, value=value)
+            for name, value in attributes
+        ],
+        conversations=[
+            ConversationHistoryItem(context=context, conversation_date=conversation_date)
+            for context, conversation_date in conversations
+        ]
+    )
