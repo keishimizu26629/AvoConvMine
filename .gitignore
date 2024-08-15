@@ -1,3 +1,4 @@
 .env
 api/app/config/*
 *.pyc
+/postgres_data/
