@@ -1,8 +1,6 @@
 build:
   docker:
     web: api/Dockerfile
+
 run:
-  web:
-    command:
-      - sh -c 'cd /app && PYTHONPATH=$PYTHONPATH:/app uvicorn main:app --host 0.0.0.0 --port $PORT'
-    image: web
+  web: sh -c 'cd /app && uvicorn main:app --host 0.0.0.0 --port $PORT'
