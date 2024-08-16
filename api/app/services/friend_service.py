@@ -1,10 +1,9 @@
+import numpy as np
 from typing import List
 from fastapi import HTTPException
-import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 from sqlalchemy.orm import Session
 from utils.embedding import generate_embedding
-from sqlalchemy.orm import Session
 from models.friend import Friend, FriendAttribute, Attribute
 from models.conversation_history import ConversationHistory
 from schemas.friend import FriendCreate, FriendUpdate, FriendDetailResponse, FriendAttributeResponse, ConversationHistoryItem

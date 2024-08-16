@@ -1,3 +1,4 @@
+import logging
 from fastapi import APIRouter, Depends, Body, HTTPException, Request
 from sqlalchemy.orm import Session
 from controllers.friend_controller import FriendController
@@ -6,7 +7,6 @@ from schemas.conversation import ConversationInput
 from schemas.attribute import AttributeSchema
 from utils.jwt import get_current_user_id
 from database import get_db
-import logging
 
 router = APIRouter()
 logger = logging.getLogger(__name__)

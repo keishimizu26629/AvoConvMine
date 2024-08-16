@@ -1,12 +1,12 @@
 import json
-from schemas.conversation import ConversationInput
+import logging
+from datetime import datetime, timezone
 from sqlalchemy.orm import Session
+from schemas.conversation import ConversationInput
 from models.conversation_history import ConversationHistory
 from utils.text_processing import clean_json_response
 from utils.gemini_api import generate_gemini_response
 from utils.attribute_keywords import UPDATE_KEYWORDS
-from datetime import datetime, timezone
-import logging
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)

@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Home, MessageCircle, User } from 'lucide-react';
+import { createFriend } from '@/services/friendService';
 import Cookies from 'js-cookie';
 
 const CreateFriendPage: React.FC = () => {
@@ -11,6 +12,13 @@ const CreateFriendPage: React.FC = () => {
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const token = Cookies.get('auth_token');
+    if (!token) {
+      router.push('/login');
+    }
+  }, [router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,22 +32,17 @@ const CreateFriendPage: React.FC = () => {
     }
 
     try {
-      const response = await fetch('http://localhost:8000/friends/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ name })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to create friend');
-      }
-
+      await createFriend(name, token);
       router.push('/home');
     } catch (err) {
-      setError('An error occurred while creating friend.');
+      if (err instanceof Error) {
+        if (err.message === 'Invalid credentials') {
+          Cookies.remove('auth_token');
+          router.push('/login');
+        } else {
+          setError('An error occurred while creating friend.');
+        }
+      }
     } finally {
       setLoading(false);
     }
@@ -51,7 +54,7 @@ const CreateFriendPage: React.FC = () => {
         <h1 className="text-2xl font-bold mb-4">Create New Friend</h1>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-          <label htmlFor="name" className="block text-sm font-medium text-gray-700">Friend&apos;s Name</label>
+            <label htmlFor="name" className="block text-sm font-medium text-gray-700">Friend&apos;s Name</label>
             <input
               type="text"
               id="name"

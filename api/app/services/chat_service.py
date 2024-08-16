@@ -1,10 +1,10 @@
 import json
 import logging
 from typing import Dict, Any, Optional, List
+from sqlalchemy.orm import Session
 from schemas.chat import InitialChatResponse
 from utils.gemini_api import generate_gemini_response
 from utils.text_processing import clean_json_response
-from sqlalchemy.orm import Session
 from models.chat_history import ChatRequest, ChatResponse
 from schemas.chat import ChatRequestSummary, ChatResponseSummary
 

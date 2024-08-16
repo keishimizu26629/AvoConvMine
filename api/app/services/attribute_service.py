@@ -1,13 +1,13 @@
 from sqlalchemy.orm import Session
+from sqlalchemy import and_
+import json
+import logging
 from models.friend import Attribute, FriendAttribute
 from utils.text_processing import clean_attribute_name
 from utils.json_utils import flatten_json
 from utils.embedding import generate_embedding, cosine_similarity
 from utils.attribute_keywords import UPDATE_KEYWORDS
-import json
-import logging
 from utils.json_utils import flatten_json_with_prefix
-from sqlalchemy import and_
 
 logger = logging.getLogger(__name__)
 

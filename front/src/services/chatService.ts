@@ -1,6 +1,7 @@
 import { ChatMessageSend, ChatMessageReceive } from '@/interfaces/chat';
+import { getApiUrl } from '@/utils/getApiUrl';
 
-const API_URL = 'http://localhost:8000';
+const API_URL = getApiUrl();
 
 export const getChats = async (token: string): Promise<ChatMessageReceive[]> => {
   const response = await fetch(`${API_URL}/chats`, {

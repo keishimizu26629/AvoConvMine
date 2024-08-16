@@ -1,7 +1,7 @@
+from datetime import datetime, timezone
 from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Text, Date, JSON, Boolean
 from sqlalchemy.orm import relationship
 from database import BaseModel
-from datetime import datetime, timezone
 
 class Friend(BaseModel):
     __tablename__ = "friends"

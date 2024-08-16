@@ -1,3 +1,4 @@
+import json
 import logging
 from typing import Tuple, Dict, Any, List, Optional
 from sqlalchemy.orm import Session
@@ -9,7 +10,6 @@ from utils.embedding import generate_embedding, cosine_similarity_single
 from utils.gemini_api import generate_gemini_response
 from utils.text_processing import clean_json_response
 from utils.attribute_synonyms import ATTRIBUTE_SYNONYMS, LOCATION_PRIORITIES
-import json
 
 logger = logging.getLogger(__name__)
 

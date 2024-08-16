@@ -1,3 +1,4 @@
+import logging
 from fastapi import Depends, HTTPException
 from sqlalchemy.orm import Session
 from models.friend import Friend
@@ -6,7 +7,6 @@ from schemas.friend import FriendCreate, FriendUpdate, FriendInDB, FriendDetailR
 from schemas.attribute import AttributeSchema
 from services import conversation_service, attribute_service, friend_service
 from database import get_db
-import logging
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
