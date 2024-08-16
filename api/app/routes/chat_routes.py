@@ -1,10 +1,10 @@
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from app.schemas.chat import ChatRequest, ChatResponse, InitialChatResponse, ChatRequestSummary
-from app.controllers.chat_controller import ChatController
-from app.utils.jwt import get_current_user_id
-from app.database import get_db
+from schemas.chat import ChatRequest, ChatResponse, InitialChatResponse, ChatRequestSummary
+from controllers.chat_controller import ChatController
+from utils.jwt import get_current_user_id
+from database import get_db
 
 router = APIRouter()
 

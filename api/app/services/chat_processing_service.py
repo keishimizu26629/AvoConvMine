@@ -2,14 +2,14 @@ import json
 import logging
 from typing import Tuple, Dict, Any, List, Optional
 from sqlalchemy.orm import Session
-from app.models.friend import Attribute
-from app.models.friend import FriendAttribute
-from app.models.friend import Friend, FriendAttribute, Attribute
-from app.utils.chat_processing_utils import find_attribute, find_friend, get_friend_attribute, get_all_friend_attributes, get_all_friend_attributes, get_friends_by_attribute
-from app.utils.embedding import generate_embedding, cosine_similarity_single
-from app.utils.gemini_api import generate_gemini_response
-from app.utils.text_processing import clean_json_response
-from app.utils.attribute_synonyms import ATTRIBUTE_SYNONYMS, LOCATION_PRIORITIES
+from models.friend import Attribute
+from models.friend import FriendAttribute
+from models.friend import Friend, FriendAttribute, Attribute
+from utils.chat_processing_utils import find_attribute, find_friend, get_friend_attribute, get_all_friend_attributes, get_all_friend_attributes, get_friends_by_attribute
+from utils.embedding import generate_embedding, cosine_similarity_single
+from utils.gemini_api import generate_gemini_response
+from utils.text_processing import clean_json_response
+from utils.attribute_synonyms import ATTRIBUTE_SYNONYMS, LOCATION_PRIORITIES
 
 logger = logging.getLogger(__name__)
 

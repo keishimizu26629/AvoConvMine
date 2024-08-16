@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from app.models.chat_history import ChatRequest
+from models.chat_history import ChatRequest
 
 class ChatRequestService:
     @staticmethod

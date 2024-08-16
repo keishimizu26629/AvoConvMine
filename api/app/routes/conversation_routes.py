@@ -1,6 +1,6 @@
 from fastapi import APIRouter
-from app.schemas.conversation import ConversationInput
-from app.services.conversation_service import extract_attributes_service
+from schemas.conversation import ConversationInput
+from services.conversation_service import extract_attributes_service
 
 router = APIRouter()
 

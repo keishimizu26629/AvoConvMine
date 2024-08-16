@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends
-from app.utils.jwt import get_current_user_id
+from utils.jwt import get_current_user_id
 
 router = APIRouter()
 

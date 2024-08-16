@@ -1,1 +1,1 @@
-from app.core.config import get_env
+from .config import get_env

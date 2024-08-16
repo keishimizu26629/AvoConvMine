@@ -1,7 +1,7 @@
 from fastapi import Depends, HTTPException
 from sqlalchemy.orm import Session
-from app.services.user_service import UserService
-from app.schemas.user import UserCreate, UserUpdate
+from services.user_service import UserService
+from schemas.user import UserCreate, UserUpdate
 
 class UserController:
     @staticmethod

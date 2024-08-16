@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from app.models.friend import Friend, FriendAttribute, Attribute
+from models.friend import Friend, FriendAttribute, Attribute
 
 def get_all_friends_attributes(db: Session, user_id: int):
     friends_attributes = db.query(Friend, FriendAttribute, Attribute)\
