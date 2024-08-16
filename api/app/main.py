@@ -10,7 +10,10 @@ app = FastAPI()
 ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
 
 allow_origins = ["https://avo-conv-mine.vercel.app"]  # 本番環境のURL
-# allow_origins = ["http://localhost:3001"]  # 開発環境のURL
+allow_origins = [
+    "https://avo-conv-mine.vercel.app",  # 本番環境のURL
+    "http://localhost:3001"  # 開発環境のURL
+]
 
 app.add_middleware(
     CORSMiddleware,
