@@ -1,8 +1,8 @@
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
-from models.user import User
-from schemas.user import UserCreate, UserUpdate
-from utils.security import get_password_hash, verify_password
+from app.models.user import User
+from app.schemas.user import UserCreate, UserUpdate
+from app.utils.security import get_password_hash, verify_password
 
 class UserService:
     @staticmethod

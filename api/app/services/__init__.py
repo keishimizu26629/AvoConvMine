@@ -1,1 +1,1 @@
-from user_service import UserService, attribute
+from app.services.user_service import UserService

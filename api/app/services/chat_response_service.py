@@ -1,6 +1,6 @@
 import logging
 from sqlalchemy.orm import Session
-from models.chat_history import ChatResponse
+from app.models.chat_history import ChatResponse
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)

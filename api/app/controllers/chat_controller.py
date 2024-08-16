@@ -1,12 +1,12 @@
 import logging
 from fastapi import Depends, HTTPException
 from sqlalchemy.orm import Session
-from schemas.chat import ChatRequest, ChatResponse, Category1Response, Category2Response, Category3Response, Category4Response, InitialChatResponse, Approximation, ChatRequestSummary
-from services.chat_service import ChatService
-from services.chat_processing_service import ChatProcessingService
-from services.chat_request_service import ChatRequestService
-from services.chat_response_service import ChatResponseService
-from database import get_db
+from app.schemas.chat import ChatRequest, ChatResponse, Category1Response, Category2Response, Category3Response, Category4Response, InitialChatResponse, Approximation, ChatRequestSummary
+from app.services.chat_service import ChatService
+from app.services.chat_processing_service import ChatProcessingService
+from app.services.chat_request_service import ChatRequestService
+from app.services.chat_response_service import ChatResponseService
+from app.database import get_db
 from typing import List
 
 logger = logging.getLogger(__name__)

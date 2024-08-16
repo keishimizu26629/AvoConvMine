@@ -4,6 +4,7 @@ ENV LANG C.UTF-8
 ENV TZ Asia/Tokyo
 
 WORKDIR /app
+# WORKDIR /
 
 # 必要なパッケージのインストール
 RUN apt-get update && apt-get install -y \

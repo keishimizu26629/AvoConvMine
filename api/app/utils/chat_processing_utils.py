@@ -2,8 +2,8 @@ import logging
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 from sqlalchemy import and_
-from models.friend import Friend, Attribute, FriendAttribute
-from utils.embedding import generate_embedding, cosine_similarity_single
+from app.models.friend import Friend, Attribute, FriendAttribute
+from app.utils.embedding import generate_embedding, cosine_similarity_single
 
 logger = logging.getLogger(__name__)
 

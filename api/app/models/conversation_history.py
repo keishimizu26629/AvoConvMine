@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Text
 from sqlalchemy.orm import relationship
 from datetime import datetime, timezone
-from database import BaseModel
+from app.database import BaseModel
 
 class ConversationHistory(BaseModel):
     __tablename__ = "conversation_histories"

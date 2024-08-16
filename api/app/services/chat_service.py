@@ -1,12 +1,12 @@
 import json
 import logging
 from typing import Dict, Any, Optional, List
-from schemas.chat import InitialChatResponse
-from utils.gemini_api import generate_gemini_response
-from utils.text_processing import clean_json_response
 from sqlalchemy.orm import Session
-from models.chat_history import ChatRequest, ChatResponse
-from schemas.chat import ChatRequestSummary, ChatResponseSummary
+from app.schemas.chat import InitialChatResponse
+from app.utils.gemini_api import generate_gemini_response
+from app.utils.text_processing import clean_json_response
+from app.models.chat_history import ChatRequest, ChatResponse
+from app.schemas.chat import ChatRequestSummary, ChatResponseSummary
 
 logger = logging.getLogger(__name__)
 

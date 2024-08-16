@@ -1,5 +1,5 @@
 import re
-from config.settings import settings
+from app.config.settings import settings
 
 def clean_json_response(response_text: str) -> str:
     cleaned = re.sub(r'```json\n?', '', response_text)

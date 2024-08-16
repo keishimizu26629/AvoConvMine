@@ -1,7 +1,7 @@
+from datetime import datetime, timezone
 from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Text, JSON, Boolean
 from sqlalchemy.orm import relationship
-from database import BaseModel
-from datetime import datetime, timezone
+from app.database import BaseModel
 
 class ChatRequest(BaseModel):
     __tablename__ = "chat_requests"
