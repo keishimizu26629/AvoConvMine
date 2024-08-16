@@ -1,8 +1,8 @@
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import MetaData
-from app.models.user import User
-from app.models.friend import Friend, Attribute, FriendAttribute
-from app.models.chat_history import ChatRequest, ChatResponse
+from .user import User
+from .friend import Friend, Attribute, FriendAttribute
+from .chat_history import ChatRequest, ChatResponse
 
 # 共通のMetaDataオブジェクトを作成
 metadata = MetaData()
