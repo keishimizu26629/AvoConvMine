@@ -1,7 +1,7 @@
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-from core.config import get_env
+from app.core.config import get_env
 from urllib.parse import quote_plus
 
 env = get_env()
