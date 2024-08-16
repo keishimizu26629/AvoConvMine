@@ -10,9 +10,9 @@ from alembic import context
 # モデルのインポートパスを追加
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from app.models import metadata
-from app.database import Engine
-from app.core.config import get_env
+from models import metadata
+from database import Engine
+from core.config import get_env
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
