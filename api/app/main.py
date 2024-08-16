@@ -9,7 +9,6 @@ app = FastAPI()
 # 環境変数から ENVIRONMENT を取得
 ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
 
-# 環境に基づいて allow_origins を設定
 # allow_origins = ["http://localhost:3001"]  # 開発環境のURL
 allow_origins = ["https://avo-conv-mine.vercel.app"]  # 本番環境のURL
 
