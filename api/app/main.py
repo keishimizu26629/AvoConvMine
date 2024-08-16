@@ -1,3 +1,4 @@
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routes import user_routes, conversation_routes, friend_routes, chat_routes, auth_routes, test_routes
@@ -5,10 +6,18 @@ from database import Engine, BaseModel as SQLAlchemyBaseModel
 
 app = FastAPI()
 
+# 環境変数から ENVIRONMENT を取得
+ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
+
+# 環境に基づいて allow_origins を設定
+if ENVIRONMENT == "production":
+    allow_origins = ["https://avo-conv-mine.vercel.app"]  # 本番環境のURL
+else:
+    allow_origins = ["http://localhost:3001"]  # 開発環境のURL
+
 app.add_middleware(
     CORSMiddleware,
-    # allow_origins=["http://localhost:3001"],  # フロントエンドのベース URL
-    allow_origins=["https://avo-conv-mine.vercel.app"],  # フロントエンドのベース URL
+    allow_origins=allow_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
