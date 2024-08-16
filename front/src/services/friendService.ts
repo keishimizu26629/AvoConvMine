@@ -1,6 +1,8 @@
 import { Friend, FriendDetails } from '@/interfaces/friend';
 
-const API_URL = 'http://localhost:8000';
+import { getApiUrl } from '@/utils/getApiUrl';
+
+const API_URL = getApiUrl();
 
 export const getFriends = async (token: string): Promise<Friend[]> => {
   const response = await fetch(`${API_URL}/friends/`, {
@@ -17,6 +19,26 @@ export const getFriends = async (token: string): Promise<Friend[]> => {
       }
     }
     throw new Error('Failed to fetch friends');
+  }
+
+  return response.json();
+};
+
+export const createFriend = async (name: string, token: string) => {
+  const response = await fetch(`${API_URL}/friends/`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify({ name })
+  });
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error('Invalid credentials');
+    }
+    throw new Error('Failed to create friend');
   }
 
   return response.json();
