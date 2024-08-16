@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.routes import user_routes, conversation_routes, friend_routes, chat_routes, auth_routes, test_routes
+from routes import user_routes, conversation_routes, friend_routes, chat_routes, auth_routes, test_routes
 from app.database import Engine, BaseModel as SQLAlchemyBaseModel
 from fastapi.middleware.cors import CORSMiddleware
 
