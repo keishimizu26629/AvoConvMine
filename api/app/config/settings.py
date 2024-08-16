@@ -23,5 +23,3 @@ class Settings:
 
     def __getattr__(self, name):
         return os.getenv(name, getattr(self, name, None))
-
-settings = Settings()

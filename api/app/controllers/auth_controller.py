@@ -1,8 +1,8 @@
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
-from app.schemas.user import UserCreate, UserResponse, UserLogin, TokenResponse
-from app.services.user_service import UserService
-from app.utils.jwt import create_access_token
+from schemas.user import UserCreate, UserResponse, UserLogin, TokenResponse
+from services.user_service import UserService
+from utils.jwt import create_access_token
 
 class AuthController:
     @staticmethod
