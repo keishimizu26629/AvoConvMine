@@ -1,4 +1,11 @@
 export const getApiUrl = (): string => {
-  // return 'https://avo-conv-mine-6c40b00157f0.herokuapp.com'; // 本番環境
-  return 'http://localhost:8000';
+  if (process.env.ENVIRONMENT == 'development') {
+    const apiUrl = 'http://localhost:8000';
+    console.log(apiUrl);
+    return apiUrl;
+  } else {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+    console.log(apiUrl);
+    return apiUrl || '';
+  }
 };

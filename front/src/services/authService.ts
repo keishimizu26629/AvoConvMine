@@ -2,17 +2,7 @@ import { LoginData, RegisterData, AuthResponse } from '@/interfaces/auth';
 import Cookies from 'js-cookie';
 import { getApiUrl } from '@/utils/getApiUrl';
 
-let winston;
-if (typeof window === 'undefined') {
-  winston = require('winston');
-}
-
-const logger = winston ? winston.createLogger(/* your configuration */) : console;
-
-
 const API_URL = getApiUrl() + '/auth';
-
-logger.info('test2');
 
 const setTokenCookie = (token: string) => {
   Cookies.set('auth_token', token, { expires: 7 }); // 7日間有効
