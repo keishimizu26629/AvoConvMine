@@ -5,6 +5,8 @@ import Link from 'next/link';
 import AuthForm from '@/components/AuthForm';
 import { LogIn, UserPlus } from 'lucide-react';
 
+console.log('test1')
+
 const LoginPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
