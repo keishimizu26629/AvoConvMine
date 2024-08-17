@@ -4,8 +4,15 @@ import React from 'react';
 import Link from 'next/link';
 import AuthForm from '@/components/AuthForm';
 import { LogIn, UserPlus } from 'lucide-react';
+let winston;
+if (typeof window === 'undefined') {
+  winston = require('winston');
+}
 
-console.log('test1')
+const logger = winston ? winston.createLogger(/* your configuration */) : console;
+
+
+logger.info('test1');
 
 const LoginPage: React.FC = () => {
   return (
