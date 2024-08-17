@@ -4,6 +4,8 @@ import { getApiUrl } from '@/utils/getApiUrl';
 
 const API_URL = getApiUrl() + '/auth';
 
+console.log('test2')
+
 const setTokenCookie = (token: string) => {
   Cookies.set('auth_token', token, { expires: 7 }); // 7日間有効
 };
