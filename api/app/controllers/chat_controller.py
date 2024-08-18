@@ -98,7 +98,7 @@ class ChatController:
                 initial_response.who
             )
             logger.info(f"Category 4 result: {result}")
-            logger.info(f"Category 4 similarity: {similarity_category}")
+            logger.info(f"Category 4 similarity: {confidence}")
             response = Category4Response(
                 who=initial_response.who,
                 what=initial_response.what or "general description",
