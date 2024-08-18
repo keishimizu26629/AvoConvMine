@@ -65,7 +65,10 @@ async def update_friend(friend_id: int, friend: FriendUpdate, db: Session = Depe
     return await FriendController.update_friend(friend_id, friend, db)
 
 @router.delete("/friends/{friend_id}")
-async def delete_friend(friend_id: int, db: Session = Depends(get_db)):
+async def delete_friend(
+    friend_id: int,
+    db: Session = Depends(get_db)
+):
     return await FriendController.delete_friend(friend_id, db)
 
 @router.post("/friend/details", response_model=FriendDetailResponse)
