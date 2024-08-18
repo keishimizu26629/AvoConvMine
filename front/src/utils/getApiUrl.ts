@@ -4,8 +4,7 @@ export const getApiUrl = (): string => {
     console.log(apiUrl);
     return apiUrl;
   } else {
-    // const apiUrl = 'https://avo-conv-mine-6c40b00157f0.herokuapp.com';
-    const apiUrl = 'http://localhost:8000';
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
     console.log(apiUrl);
     return apiUrl || '';
   }
