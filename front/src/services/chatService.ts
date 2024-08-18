@@ -4,7 +4,7 @@ import { getApiUrl } from '@/utils/getApiUrl';
 const API_URL = getApiUrl();
 
 export const getChats = async (token: string): Promise<ChatMessageReceive[]> => {
-  const response = await fetch(`${API_URL}/chats`, {
+  const response = await fetch(`${API_URL}/chats/`, {
     method: 'GET',
     headers: {
       'Authorization': `Bearer ${token}`,

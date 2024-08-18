@@ -16,6 +16,27 @@ const ChatPage: React.FC = () => {
   const [initialLoading, setInitialLoading] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  const fetchChatsAndScroll = async () => {
+    const token = Cookies.get('auth_token');
+    if (!token) {
+      router.push('/login');
+      return;
+    }
+    try {
+      const response = await getChats(token);
+      setMessages(response); // データの順序を維持
+
+      // レスポンスが返ってきた後、次のレンダリングサイクルでスクロールを実行
+      setTimeout(() => {
+        scrollToBottom();
+      }, 0);
+    } catch (error) {
+      console.error('Failed to fetch chats:', error);
+    } finally {
+      setInitialLoading(false);
+    }
+  };
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }
@@ -37,12 +58,8 @@ const ChatPage: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchChats();
+    fetchChatsAndScroll();
   }, [router]);
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
 
   const handleSendMessage = async () => {
     if (!inputMessage.trim()) return;
