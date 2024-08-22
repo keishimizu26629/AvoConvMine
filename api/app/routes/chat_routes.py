@@ -14,8 +14,7 @@ async def process_chat(
     db: Session = Depends(get_db),
     current_user_id: int = Depends(get_current_user_id)
 ):
-    content = chat_request.content.strip().lower()  # 入力を正規化
-    return await ChatController.process_chat(current_user_id, content, db)
+    return await ChatController.process_chat(current_user_id, chat_request.content, db)
 
 @router.post("/test-chat", response_model=InitialChatResponse)
 async def test_chat(chat_request: ChatRequest, db: Session = Depends(get_db)):

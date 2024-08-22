@@ -1,5 +1,6 @@
 import json
 import logging
+import re
 from typing import Tuple, Dict, Any, List, Optional
 from sqlalchemy.orm import Session
 from models.friend import Attribute
@@ -441,35 +442,47 @@ class ChatProcessingService:
         """
 
         gemini_response = await generate_gemini_response(prompt)
-
-        # レスポンスの内容をログに出力
         logger.debug(f"Raw Gemini API response: {gemini_response.text}")
 
         cleaned_response = clean_json_response(gemini_response.text)
         logger.debug(f"Cleaned Gemini API response: {cleaned_response}")
 
-        try:
-            gemini_result = json.loads(cleaned_response)
-        except json.JSONDecodeError as e:
-            logger.error(f"JSON decode error: {e}")
-            # エラー時のフォールバック処理
-            gemini_result = {
+        # 部分的なJSON解析を試みる
+        gemini_result = {
+            "summary": "",
+            "detailed_description": "",
+            "missing_info": "",
+            "final_answer": ""
+        }
+
+        # 正規表現を使用して各フィールドを抽出
+        for field in gemini_result.keys():
+            match = re.search(f'"{field}"\s*:\s*"(.+?)"', cleaned_response, re.DOTALL)
+            if match:
+                gemini_result[field] = match.group(1).strip()
+
+        logger.debug(f"Extracted Gemini API response: {gemini_result}")
+
+        # final_answerが抽出できた場合、それを優先して使用
+        if gemini_result["final_answer"]:
+            result = {
+                "status": "Found",
+                "answer": gemini_result.get("detailed_description", "No detailed description available."),
+                "summary": gemini_result.get("summary", "No summary available."),
+                "missing_info": gemini_result.get("missing_info", "No information about missing data."),
+                "approximation": None,
+                "final_answer": gemini_result["final_answer"]
+            }
+        else:
+            # final_answerが抽出できなかった場合のフォールバック
+            result = {
+                "status": "Error",
+                "answer": "An error occurred while processing the response.",
                 "summary": f"Error processing information for {who}.",
-                "detailed_description": "An error occurred while processing the response.",
                 "missing_info": "Unable to retrieve information due to a processing error.",
+                "approximation": None,
                 "final_answer": f"I'm sorry, but I encountered an error while retrieving information about {who}."
             }
-
-        logger.debug(f"Processed Gemini API response: {gemini_result}")
-
-        result = {
-            "status": "Found",
-            "answer": gemini_result["detailed_description"],
-            "summary": gemini_result["summary"],
-            "missing_info": gemini_result.get("missing_info"),
-            "approximation": None,
-            "final_answer": gemini_result["final_answer"]
-        }
 
         logger.debug(f"process_category_4 result: {result}")
 

@@ -35,8 +35,8 @@ services:
     ports:
       - "3001:3000"
     environment:
-      ENVIRONMENT: development
-      NEXT_PUBLIC_API_URL: http://localhost:8000
+      ENVIRONMENT: ${ENVIRONMENT}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
     volumes:
       - ./front:/usr/src/app
       - ./front/next.config.mjs:/usr/src/app/next.config.mjs

@@ -30,8 +30,20 @@ class FriendDetailRequest(BaseModel):
 class ConversationHistoryItem(BaseModel):
     context: str
     conversation_date: datetime
-    
+
 class FriendDetailResponse(BaseModel):
     friend_name: str
     attributes: List[FriendAttributeResponse]
     conversations: List[ConversationHistoryItem]
+
+class FriendAttributeUpdate(BaseModel):
+    attribute_name: str
+    value: str
+
+class UpdateFriendDetailsRequest(BaseModel):
+    friend_id: int
+    attributes: List[FriendAttributeUpdate]
+
+class UpdateFriendDetailsResponse(BaseModel):
+    friend_name: str
+    attributes: List[FriendAttributeUpdate]

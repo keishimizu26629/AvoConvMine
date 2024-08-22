@@ -45,7 +45,7 @@ class ChatService:
         - Are Mary and Tom married?
         - Does Karen have a child?
 
-        ②: Questions asking about a specific attribute of a specific person or their relation, typically starting with "What", "Where", "When", "How", or phrases like "tell me about"
+        ②: Questions asking about a specific attribute of a specific person or their relation, typically starting with "What", "Where", "When", "How", or phrases like "tell me about [Person's] [Attribute]"
         Pattern: "What/Where/When/How is/was [Person/Person's relation]'s [Attribute]?" or "Tell me about [Person's] [Attribute]" or similar specific inquiries
         Examples:
         - What is David's occupation?
@@ -63,16 +63,19 @@ class ChatService:
         - Who lives in Tokyo?
 
         ④: Questions asking for a general description or overview of a specific person
-        Pattern: Open-ended questions about a person without specifying an attribute
+        Pattern: Open-ended questions about a person without specifying an attribute, including "Tell me about [Person]" format
         Examples:
         - Can you tell me about Lisa?
         - What do you know about Dr. Johnson?
+        - Tell me about John Smith
+        - Who is Jane Doe?
 
         Important:
         - Pay close attention to the structure and intent of the question.
-        - For category ② questions, ensure that both the person (primary_subject) and the attribute are correctly identified, even if the question is phrased as "Tell me about [Person's] [Attribute]".
+        - For category ② questions, ensure that both the person (primary_subject) and the attribute are correctly identified. The question must specifically ask about a particular attribute.
         - For category ③ questions, the primary_subject should be 'unknown' unless a specific group is mentioned.
         - The attribute for category ③ questions should be the characteristic or possession being asked about.
+        - For category ④ questions, if the question is in the format "Tell me about [Person]" or asks for general information about a person without specifying an attribute, it should be classified as category ④.
 
         Note: Return only the JSON object without any additional explanation.
         """
