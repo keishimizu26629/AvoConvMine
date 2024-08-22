@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from utils.embedding import generate_embedding
 from models.friend import Friend, FriendAttribute, Attribute
 from models.conversation_history import ConversationHistory
-from schemas.friend import FriendCreate, FriendUpdate, FriendDetailResponse, FriendAttributeResponse, ConversationHistoryItem
+from schemas.friend import FriendAttributeUpdate, FriendCreate, FriendUpdate, FriendDetailResponse, FriendAttributeResponse, ConversationHistoryItem, UpdateFriendDetailsResponse
 
 import logging
 import json
@@ -146,4 +146,55 @@ def get_friend_details_with_history(db: Session, user_id: int, friend_id: int) -
             ConversationHistoryItem(context=context, conversation_date=conversation_date)
             for context, conversation_date in conversations
         ]
+    )
+
+def update_friend_details(db: Session, user_id: int, friend_id: int, attributes: list[FriendAttributeUpdate]) -> UpdateFriendDetailsResponse:
+    logger.info(f"Updating friend details for user_id: {user_id}, friend_id: {friend_id}")
+
+    friend = db.query(Friend).filter(Friend.id == friend_id, Friend.user_id == user_id).first()
+    if not friend:
+        logger.error(f"Friend not found for user_id: {user_id}, friend_id: {friend_id}")
+        raise HTTPException(status_code=404, detail="Friend not found")
+
+    updated_attributes = []
+    for attr in attributes:
+        logger.debug(f"Processing attribute: {attr.attribute_name}")
+        attribute = db.query(Attribute).filter(Attribute.name == attr.attribute_name).first()
+        if not attribute:
+            logger.debug(f"Creating new attribute: {attr.attribute_name}")
+            attribute = Attribute(name=attr.attribute_name)
+            db.add(attribute)
+            db.flush()
+
+        friend_attr = db.query(FriendAttribute).filter(
+            FriendAttribute.friend_id == friend_id,
+            FriendAttribute.attribute_id == attribute.id
+        ).first()
+
+        if friend_attr:
+            logger.debug(f"Updating existing attribute: {attr.attribute_name}")
+            friend_attr.value = attr.value
+        else:
+            logger.debug(f"Adding new attribute to friend: {attr.attribute_name}")
+            friend_attr = FriendAttribute(
+                user_id=user_id,
+                friend_id=friend_id,
+                attribute_id=attribute.id,
+                value=attr.value
+            )
+            db.add(friend_attr)
+
+        updated_attributes.append({"attribute_name": attr.attribute_name, "value": attr.value})
+
+    try:
+        db.commit()
+        logger.info("Successfully committed changes to database")
+    except Exception as e:
+        logger.error(f"Error committing to database: {str(e)}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Database error occurred")
+
+    return UpdateFriendDetailsResponse(
+        friend_name=friend.name,
+        attributes=updated_attributes
     )

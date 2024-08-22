@@ -2,7 +2,7 @@ import logging
 from fastapi import APIRouter, Depends, Body, HTTPException, Request
 from sqlalchemy.orm import Session
 from controllers.friend_controller import FriendController
-from schemas.friend import FriendCreate, FriendUpdate, FriendInDB, FriendDetailRequest, FriendDetailResponse
+from schemas.friend import FriendCreate, FriendUpdate, FriendInDB, FriendDetailRequest, FriendDetailResponse, UpdateFriendDetailsRequest, UpdateFriendDetailsResponse
 from schemas.conversation import ConversationInput
 from schemas.attribute import AttributeSchema
 from utils.jwt import get_current_user_id
@@ -82,6 +82,24 @@ async def get_friend_details_with_history(
     except HTTPException as e:
         raise e
     except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/friend/update", response_model=UpdateFriendDetailsResponse)
+async def update_friend_details(
+    request: UpdateFriendDetailsRequest,
+    db: Session = Depends(get_db),
+    current_user_id: int = Depends(get_current_user_id)
+):
+    logger.info(f"Received update request for friend_id: {request.friend_id}")
+    try:
+        result = FriendController.update_friend_details(db, current_user_id, request)
+        logger.info(f"Successfully updated friend details for friend_id: {request.friend_id}")
+        return result
+    except HTTPException as e:
+        logger.error(f"HTTP exception occurred: {str(e)}")
+        raise
+    except Exception as e:
+        logger.error(f"Unexpected error occurred: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/test-friends")

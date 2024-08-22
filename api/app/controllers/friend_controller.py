@@ -3,7 +3,7 @@ from fastapi import Depends, HTTPException
 from sqlalchemy.orm import Session
 from models.friend import Friend
 from schemas.conversation import ConversationInput
-from schemas.friend import FriendCreate, FriendUpdate, FriendInDB, FriendDetailRequest, FriendDetailResponse
+from schemas.friend import FriendCreate, FriendUpdate, FriendInDB, FriendDetailRequest, FriendDetailResponse, UpdateFriendDetailsRequest, UpdateFriendDetailsResponse
 from schemas.attribute import AttributeSchema
 from services import conversation_service, attribute_service, friend_service
 from database import get_db
@@ -96,4 +96,18 @@ class FriendController:
         except HTTPException as e:
             raise e
         except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+
+    @staticmethod
+    def update_friend_details(db: Session, user_id: int, request: UpdateFriendDetailsRequest) -> UpdateFriendDetailsResponse:
+        logger.info(f"Updating friend details for user_id: {user_id}, friend_id: {request.friend_id}")
+        try:
+            result = friend_service.update_friend_details(db, user_id, request.friend_id, request.attributes)
+            logger.info("Successfully updated friend details")
+            return result
+        except HTTPException as e:
+            logger.error(f"HTTP exception occurred: {str(e)}")
+            raise
+        except Exception as e:
+            logger.error(f"Unexpected error occurred: {str(e)}")
             raise HTTPException(status_code=500, detail=str(e))
