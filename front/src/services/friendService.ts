@@ -1,4 +1,4 @@
-import { Friend, FriendDetails } from '@/interfaces/friend';
+import { Friend, FriendAttribute, FriendDetails } from '@/interfaces/friend';
 
 import { getApiUrl } from '@/utils/getApiUrl';
 
@@ -79,5 +79,29 @@ export const addConversation = async (token: string, friendId: number, context: 
 
   if (!response.ok) {
     throw new Error('Failed to create conversation');
+  }
+};
+
+export const updateFriendDetails = async (token: string, friendId: number, attributes: FriendAttribute[]): Promise<void> => {
+  const response = await fetch(`${API_URL}/friend/update`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      friend_id: friendId,
+      attributes: attributes
+    })
+  });
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      const errorData = await response.json();
+      if (errorData.detail === "Could not validate credentials") {
+        throw new Error('Invalid credentials');
+      }
+    }
+    throw new Error('Failed to update friend details');
   }
 };
