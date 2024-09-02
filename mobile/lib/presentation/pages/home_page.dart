@@ -1,74 +1,68 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../application/friend/friend_notifier.dart';
-import '../../domain/entities/friend.dart';
-import '../../utils/api_client.dart';
+import '../widgets/friend_list.dart';
+import '../widgets/chat_list.dart';
+import '../widgets/my_page.dart';
+import '../../application/auth/auth_notifier.dart';
 
-final apiClientProvider = Provider((ref) => ApiClient('your_token_here'));
-
-final friendNotifierProvider = StateNotifierProvider<FriendNotifier, AsyncValue<List<Friend>>>(
-  (ref) => FriendNotifier(ref.watch(apiClientProvider)),
-);
+final currentIndexProvider = StateProvider<int>((ref) => 0);
 
 class HomePage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final friendsState = ref.watch(friendNotifierProvider);
+    final currentIndex = ref.watch(currentIndexProvider);
+    final authState = ref.watch(authNotifierProvider);
+
+    // Check if the user is not authenticated and redirect to login page
+    if (authState.value == false) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Navigator.of(context).pushReplacementNamed('/login');
+      });
+    }
 
     return Scaffold(
-      appBar: AppBar(title: Text('Friends')),
-      body: friendsState.when(
-        data: (friends) => RefreshIndicator(
-          onRefresh: () => ref.read(friendNotifierProvider.notifier).fetchFriends(),
-          child: ListView.builder(
-            itemCount: friends.length,
-            itemBuilder: (context, index) {
-              final friend = friends[index];
-              return ListTile(
-                title: Text(friend.name),
-                subtitle: Text('ID: ${friend.id}'),
-              );
-            },
-          ),
-        ),
-        loading: () => Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(child: Text('Error: $error')),
+      appBar: AppBar(
+        title: Text(_getTitleForIndex(currentIndex)),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showAddFriendDialog(context, ref),
-        child: Icon(Icons.add),
+      body: IndexedStack(
+        index: currentIndex,
+        children: [
+          FriendList(),
+          ChatList(),
+          MyPage(),
+        ],
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: currentIndex,
+        onTap: (index) => ref.read(currentIndexProvider.notifier).state = index,
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.people),
+            label: 'Friends',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.chat),
+            label: 'Chat',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person),
+            label: 'Mypage',
+          ),
+        ],
       ),
     );
   }
 
-  void _showAddFriendDialog(BuildContext context, WidgetRef ref) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        String name = '';
-        return AlertDialog(
-          title: Text('Add Friend'),
-          content: TextField(
-            onChanged: (value) => name = value,
-            decoration: InputDecoration(hintText: "Friend's name"),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () {
-                if (name.isNotEmpty) {
-                  ref.read(friendNotifierProvider.notifier).createFriend(name);
-                  Navigator.pop(context);
-                }
-              },
-              child: Text('Add'),
-            ),
-          ],
-        );
-      },
-    );
+  String _getTitleForIndex(int index) {
+    switch (index) {
+      case 0:
+        return 'Friends';
+      case 1:
+        return 'Chat';
+      case 2:
+        return 'My Page';
+      default:
+        return 'Friend App';
+    }
   }
 }
